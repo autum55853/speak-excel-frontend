@@ -1,0 +1,53 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(sudo *)",
+      "Bash(git push *)",
+      "Bash(git reset --hard *)"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "network": {
+      "allowLocalBinding": true,
+      "allowedDomains": [
+        "registry.npmjs.org",
+        "*.npmjs.org",
+        "*.github.com",
+        "github.com",
+        "*.githubusercontent.com",
+        "localhost:*"
+      ]
+    }
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /mnt/c/Users/Amber/Web/speak-excel/.claude/hooks/auto-format.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash /mnt/c/Users/Amber/Web/speak-excel/frontend/.claude/hooks/auto-test.sh"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /mnt/c/Users/Amber/Web/speak-excel/.claude/hooks/compact-reminder.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
