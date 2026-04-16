@@ -137,7 +137,7 @@ interface Gauge {
 
 | 格式 | 套件 | 說明 |
 |------|------|------|
-| Excel (.xlsx) | `xlsx`（SheetJS） | 生成含表頭的試算表 |
+| Excel (.xlsx) | `exceljs` | 生成含表頭的試算表 |
 | PDF | `jspdf` + `jspdf-autotable` | 含中文表格的 PDF，需嵌入字型 |
 | 網頁列印 | `window.print()` | 搭配 `@media print` CSS，隱藏操作按鈕 |
 
