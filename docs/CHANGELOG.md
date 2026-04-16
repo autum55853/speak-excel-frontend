@@ -4,6 +4,16 @@
 
 ---
 
+## 2026-04-16 — 測試環境建立
+
+- 安裝 Vitest v4、@vue/test-utils v2、jsdom、@vitest/coverage-v8
+- 在 `vite.config.ts` 加入 `test` 區塊（jsdom 環境、globals 模式、v8 覆蓋率）
+- 建立 `tests/setup.ts`：全域清空 localStorage、mock Web Speech API
+- 建立 `tests/example.test.ts`：環境驗證測試（localStorage 隔離、Speech API mock 掛載）
+- 新增 npm scripts：`test`、`test:run`、`test:coverage`
+
+---
+
 ## 2026-04-16 — 專案初始化
 
 - 以 `npm create vue@latest` 初始化 Vue 3 + TypeScript + Vite 專案

@@ -2,13 +2,21 @@
 
 ## 目前狀態
 
-已設定自動化測試框架。
+自動化測試框架已安裝並設定完成（2026-04-16）。
 
-| 層級 | 工具 | 狀態 |
-|------|------|------|
-| 單元測試 | Vitest | 已安裝 |
-| 元件測試 | @vue/test-utils + Vitest | 已安裝 |
-| E2E 測試 | Playwright（可選） | 未安裝 |
+| 層級 | 工具 | 版本 | 狀態 |
+|------|------|------|------|
+| 單元測試 | Vitest | ^4.1.4 | 已安裝 |
+| 元件測試 | @vue/test-utils | ^2.4.6 | 已安裝 |
+| 覆蓋率 | @vitest/coverage-v8 | ^4.1.4 | 已安裝 |
+| 測試環境 | jsdom | ^29.0.2 | 已安裝 |
+| E2E 測試 | Playwright（可選） | — | 未安裝 |
+
+### 設定位置
+
+- 測試設定：`vite.config.ts` → `test` 區塊
+- 全域初始化：`tests/setup.ts`（localStorage 清空 + Speech API mock）
+- 環境驗證：`tests/example.test.ts`
 
 ---
 
