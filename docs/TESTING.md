@@ -2,21 +2,33 @@
 
 ## 目前狀態
 
-本專案尚未設定自動化測試框架。以下為規劃方向與手動測試指南。
+已設定自動化測試框架。
+
+| 層級 | 工具 | 狀態 |
+|------|------|------|
+| 單元測試 | Vitest | 已安裝 |
+| 元件測試 | @vue/test-utils + Vitest | 已安裝 |
+| E2E 測試 | Playwright（可選） | 未安裝 |
 
 ---
 
-## 規劃的測試框架
+## 常用指令
 
-| 層級 | 工具 | 說明 |
-|------|------|------|
-| 單元測試 | Vitest | 測試 composables、api.ts 函式 |
-| 元件測試 | @vue/test-utils + Vitest | 測試 Vue 元件互動 |
-| E2E 測試 | Playwright（可選） | 測試完整使用者流程 |
-
-安裝指令（待執行）：
 ```bash
-npm install -D vitest @vue/test-utils @vitejs/plugin-vue jsdom
+npm run test          # 監聽模式（開發中使用）
+npm run test:run      # 單次執行所有測試
+npm run test:coverage # 執行並產生覆蓋率報告
+```
+
+## 目錄結構
+
+```
+tests/
+├── setup.ts              # 全局 Mock 設定（localStorage、SpeechRecognition）
+├── example.test.ts       # 環境驗證範例
+├── composables/          # composable 單元測試
+├── services/             # api.ts / localStorage 操作測試
+└── components/           # Vue 元件互動測試
 ```
 
 ---
@@ -49,22 +61,35 @@ npm install -D vitest @vue/test-utils @vitejs/plugin-vue jsdom
 
 ---
 
-## 撰寫 Vitest 測試的步驟（未來）
+## 撰寫 Vitest 測試
 
-1. 在 `src/` 旁建立 `tests/` 目錄
-2. 測試檔案命名：`*.test.ts`
-3. composable 測試範例：
-   ```typescript
-   import { describe, it, expect } from 'vitest'
-   import { useExport } from '../src/composables/useExport'
+測試檔案放在對應子目錄，命名格式：`<target>.test.ts`。
 
-   describe('useExport', () => {
-     it('generates correct filename', () => {
-       // ...
-     })
-   })
-   ```
-4. 執行測試：`npm run test`
+composable 測試範例：
+```typescript
+import { describe, it, expect } from 'vitest'
+import { useExport } from '../../src/composables/useExport'
+
+describe('useExport', () => {
+  it('generates correct filename', () => {
+    // ...
+  })
+})
+```
+
+元件測試範例：
+```typescript
+import { mount } from '@vue/test-utils'
+import { describe, it, expect } from 'vitest'
+import MyComponent from '../../src/components/MyComponent.vue'
+
+describe('MyComponent', () => {
+  it('renders correctly', () => {
+    const wrapper = mount(MyComponent)
+    expect(wrapper.exists()).toBe(true)
+  })
+})
+```
 
 ---
 

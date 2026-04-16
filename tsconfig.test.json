@@ -1,0 +1,10 @@
+{
+  "extends": "@vue/tsconfig/tsconfig.dom.json",
+  "compilerOptions": {
+    "types": ["vitest/globals", "vite/client"],
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "erasableSyntaxOnly": true
+  },
+  "include": ["tests/**/*.ts", "src/**/*.ts", "src/**/*.vue"]
+}
