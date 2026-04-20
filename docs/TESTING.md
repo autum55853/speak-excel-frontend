@@ -106,3 +106,37 @@ describe('MyComponent', () => {
 - Web Speech API 在測試環境不可用，需要 mock `window.SpeechRecognition`
 - localStorage 在各測試間需要 `beforeEach` 清空，避免狀態污染
 - UUID 生成函式需要 mock，以確保測試結果可重現
+
+---
+
+## 設定陷阱
+
+### `vite.config.ts` 使用 `test` 欄位時型別錯誤
+
+**症狀**：執行 `npm run build`（會先跑 `vue-tsc -b`）時出現：
+
+```
+error TS2769: No overload matches this call.
+  Object literal may only specify known properties,
+  and 'test' does not exist in type 'UserConfigExport'.
+```
+
+**原因**：`vite` 匯出的 `defineConfig` 型別不包含 Vitest 的 `test` 欄位；
+`vitest/config` 匯出的 `defineConfig` 則同時覆蓋 Vite 與 Vitest 的設定型別。
+
+**修正**：將 `vite.config.ts` 的 import 來源改為 `vitest/config`：
+
+```ts
+// 錯誤
+import { defineConfig } from 'vite'
+
+// 正確
+import { defineConfig } from 'vitest/config'
+```
+
+替代做法（若不想改 import）：
+
+```ts
+/// <reference types="vitest" />
+import { defineConfig } from 'vite'
+```

@@ -4,6 +4,13 @@
 
 ---
 
+## 2026-04-20 — 修正 `vite.config.ts` 型別錯誤
+
+- 將 `defineConfig` import 來源由 `vite` 改為 `vitest/config`，使 `test` 欄位的型別能被正確識別，解決 `npm run build` 時 `vue-tsc` 回報 TS2769
+- 於 `docs/TESTING.md` 新增「設定陷阱」章節，記錄症狀、原因與修正方式
+
+---
+
 ## 2026-04-16 — 測試環境建立
 
 - 安裝 Vitest v4、@vue/test-utils v2、jsdom、@vitest/coverage-v8
