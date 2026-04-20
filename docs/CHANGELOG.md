@@ -4,6 +4,19 @@
 
 ---
 
+## 2026-04-20 — 建立 ESLint / Prettier / pre-commit hook 及環境變數範本
+
+- 安裝 ESLint 10 + Prettier 3，採用 Vue 官方 flat config（`eslint-plugin-vue` + `@vue/eslint-config-typescript` + `@vue/eslint-config-prettier`）
+- 新增 `eslint.config.ts`、`.prettierrc.json`、`.prettierignore`
+- `package.json` 新增 scripts：`lint`、`format`、`prepare`
+- 安裝 husky v9 + lint-staged v16，在 `.husky/pre-commit` 執行 `lint-staged`；`package.json` 加入 `lint-staged` 設定：TS/Vue/JS 跑 `eslint --fix` + `prettier`，JSON/MD/CSS/HTML 跑 `prettier`
+- 新增 `.env.example`（列出 `VITE_API_BASE_URL`）
+- `.gitignore` 補上 `.env` / `.env.*` 規則（保留 `.env.example`）
+
+> 注意：WSL 環境下 `.git/config` 被其他程式鎖定，`husky init` 未能寫入 `core.hooksPath`，需手動執行 `git config core.hooksPath .husky`（或重新跑 `npm install` 觸發 `prepare`）
+
+---
+
 ## 2026-04-20 — 修正 `vite.config.ts` 型別錯誤
 
 - 將 `defineConfig` import 來源由 `vite` 改為 `vitest/config`，使 `test` 欄位的型別能被正確識別，解決 `npm run build` 時 `vue-tsc` 回報 TS2769
