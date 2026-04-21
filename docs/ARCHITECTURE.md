@@ -42,19 +42,18 @@ speak-excel/
 │   ├── services/
 │   │   └── api.ts               # API service layer（async，localStorage / 未來 HTTP）
 │   ├── composables/
-│   │   ├── useSpeechRecognition.ts  # 語音輸入 composable（Phase 3）
-│   │   └── useExport.ts             # 匯出功能 composable（Phase 4）
+│   │   ├── useSpeechRecognition.ts  # ✅ 語音輸入 composable
+│   │   └── useExport.ts             # ✅ 匯出功能 composable
 │   ├── views/                   # 頁面元件（對應路由）
 │   │   ├── ChecklistListView.vue    # ✅ 首頁：檢查表列表
 │   │   ├── ChecklistEditView.vue    # ✅ 新增 / 編輯檢查表
-│   │   ├── ChecklistPreviewView.vue # ⏳ 預覽模式（Phase 3）
+│   │   ├── ChecklistPreviewView.vue # ✅ 預覽模式
 │   │   └── GaugeManageView.vue      # ✅ 量具管理
 │   └── components/              # 可複用 UI 元件
 │       ├── ChecklistTable.vue       # ✅ 檢查表表格（編輯用）
-│       ├── ChecklistPreview.vue     # ⏳ 檢查表表格（唯讀，Phase 3）
-│       ├── SpeechInputField.vue     # ⏳ 文字框 + 麥克風按鈕（Phase 3）
+│       ├── SpeechInputField.vue     # ✅ 文字框 + 麥克風按鈕
 │       ├── GaugeSelect.vue          # ✅ 量具下拉選單（含即時新增）
-│       └── ExportDialog.vue         # ⏳ 匯出格式選擇對話框（Phase 4）
+│       └── ExportDialog.vue         # ✅ 匯出格式選擇對話框
 ├── docs/
 │   ├── plans/                   # 進行中開發計畫
 │   └── plans/archive/           # 已完成計畫歸檔
@@ -156,10 +155,19 @@ type ExportFormat = 'excel' | 'pdf' | 'print'
 
 ## 匯出架構（`src/composables/useExport.ts`）
 
-| 格式          | 套件                        | 說明                                  |
-| ------------- | --------------------------- | ------------------------------------- |
-| Excel (.xlsx) | `exceljs`                   | 生成含表頭的試算表                    |
-| PDF           | `jspdf` + `jspdf-autotable` | 含中文表格的 PDF，需嵌入字型          |
-| 網頁列印      | `window.print()`            | 搭配 `@media print` CSS，隱藏操作按鈕 |
+| 格式          | 套件                        | 說明                                                                |
+| ------------- | --------------------------- | ------------------------------------------------------------------- |
+| Excel (.xlsx) | `exceljs`                   | 單一工作表；含標題列、表頭底色、邊框、欄寬、自動換行                |
+| PDF           | `jspdf` + `jspdf-autotable` | A4 直式；透過 `addFileToVFS` + `addFont` 嵌入 Noto Sans TC 中文字型 |
+| 網頁列印      | `window.print()`            | 搭配 `@media print` CSS，隱藏 AppBar 與 `.no-print` 元素            |
 
-匯出入口統一由 `ExportDialog.vue` 呼叫，使用者選擇格式後觸發對應的 composable 函式。
+匯出入口統一由 `ExportDialog.vue` 呼叫，`ChecklistPreviewView` 之外的 View 不直接 import `useExport`。
+
+### PDF 中文字型載入流程
+
+1. `useExport` 首次呼叫 `exportToPdf` 時 `fetch('/fonts/NotoSansTC-Regular.ttf')`
+2. 取得 `ArrayBuffer` 後分塊轉 base64（避免大檔 `String.fromCharCode(...bytes)` 堆疊溢位）
+3. 結果快取於 module-scope 變數，同一頁 session 不重複下載
+4. `doc.addFileToVFS()` 寫入 VFS → `doc.addFont()` 註冊 → `autoTable` 以此字型渲染表頭與內文
+
+> 字型檔未部署時，會拋出含明確修復指引的錯誤（`ExportDialog` 會以 `v-alert` 顯示，引導使用者改用「網頁列印」）。

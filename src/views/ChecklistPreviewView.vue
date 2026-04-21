@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import ExportDialog from '../components/ExportDialog.vue'
 import { getChecklist } from '../services/api'
 import type { Checklist } from '../types'
 
@@ -12,6 +13,7 @@ const checklistId = computed(() => (typeof route.params.id === 'string' ? route.
 const checklist = ref<Checklist | null>(null)
 const loading = ref(false)
 const errorMessage = ref('')
+const showExportDialog = ref(false)
 
 function formatDateTime(iso: string): string {
   const d = new Date(iso)
@@ -51,7 +53,8 @@ function goBack() {
 }
 
 function handleExport() {
-  errorMessage.value = '匯出功能將於 Phase 4 實作'
+  if (!checklist.value) return
+  showExportDialog.value = true
 }
 
 onMounted(load)
@@ -70,8 +73,12 @@ onMounted(load)
       <h1 class="text-h5">檢查表預覽</h1>
       <v-spacer />
       <v-btn class="mr-2" variant="text" prepend-icon="mdi-pencil" @click="goEdit">重新編輯</v-btn>
-      <v-btn color="primary" prepend-icon="mdi-export" @click="handleExport">匯出</v-btn>
+      <v-btn color="primary" prepend-icon="mdi-export" :disabled="!checklist" @click="handleExport">
+        匯出
+      </v-btn>
     </div>
+
+    <ExportDialog v-model="showExportDialog" :checklist="checklist" />
 
     <v-alert
       v-if="errorMessage"

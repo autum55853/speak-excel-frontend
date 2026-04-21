@@ -19,6 +19,23 @@
 
 ---
 
+## 2026-04-21 — Phase 4 匯出功能（Excel / PDF / 列印）
+
+- 新增 `src/composables/useExport.ts`：三個匯出函式 + 共用輔助
+  - `exportToExcel`：`exceljs` 產生單一工作表（標題合併列、表頭底色 `#E3F2FD`、細框線、欄寬、文字換行、置頂對齊）
+  - `exportToPdf`：A4 直式；lazy-load `/fonts/NotoSansTC-Regular.ttf` → base64 → `addFileToVFS` + `addFont` 註冊 `NotoSansTC`；字型結果 module-scope 快取避免重複下載；找不到字型時拋出含修復指引的錯誤
+  - `exportToPrint`：呼叫 `window.print()`
+  - 共用 `sanitizeFilename`（剝除 `\ / : * ? " < > |`）、`formatGauge`（`gaugeName` → 「（已刪除）」fallback）、`triggerDownload`（Blob → `<a>` click → `revokeObjectURL`）
+- 新增 `src/components/ExportDialog.vue`：`v-dialog` + `v-list`，三種格式並列
+  - 匯出中：該列顯示 `v-progress-circular`，對話框切換 `persistent` 防止誤關
+  - 錯誤以 `v-alert` 內嵌顯示（例：PDF 字型檔缺失）
+  - 「網頁列印」選擇後先關對話框、待下一幀再 `window.print()`，避免殘影混入列印內容
+- 更新 `src/views/ChecklistPreviewView.vue`：
+  - 「匯出」按鈕改為開啟 `ExportDialog`（先前為 Phase 4 placeholder 提示）
+  - `:disabled` 綁 `!checklist`，避免載入未完成時觸發
+
+---
+
 ## 2026-04-21 — Phase 3 語音輸入 + 預覽模式
 
 - 新增 `src/composables/useSpeechRecognition.ts`：包裝 Web Speech API（`SpeechRecognition` / `webkitSpeechRecognition`），預設 `zh-TW`，暴露 `isSupported` / `isListening` / `toggle`；`onUnmounted` 自動停止

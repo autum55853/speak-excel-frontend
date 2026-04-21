@@ -72,15 +72,22 @@
 
 ---
 
-## 匯出功能（ExportDialog）⏳
+## 匯出功能（ExportDialog）✅
 
 行為描述：
 
-- 對話框列出三種匯出格式選項：
-  1. **Excel (.xlsx)**：下載包含表頭和資料的試算表
-  2. **PDF**：下載含中文表格的 PDF 檔案
-  3. **列印**：呼叫 `window.print()`，自動隱藏操作按鈕
-- 選擇後立即觸發對應動作並關閉對話框
+- 於預覽頁按「匯出」開啟 `ExportDialog`，對話框列出三種匯出格式：
+  1. **Excel (.xlsx)**：`exceljs` 產生含標題列、表頭底色、邊框、欄寬、自動換行的試算表
+  2. **PDF**：`jspdf` + `jspdf-autotable` 產生 A4 直式 PDF，含中文字型
+  3. **網頁列印**：呼叫 `window.print()`，透過 `@media print` CSS 隱藏 AppBar 與操作按鈕
+- 選擇後立即觸發對應動作；匯出中列項顯示 `v-progress-circular`，對話框進入 `persistent` 模式避免誤關
+- 錯誤訊息以 `v-alert` 顯示於對話框內（例：PDF 字型檔載入失敗）
+- 檔名格式：`<文件名稱>.xlsx` / `<文件名稱>.pdf`，去除檔名非法字元 `\ / : * ? " < > |`
+
+### PDF 中文字型部署
+
+- PDF 需中文字型：將 `NotoSansTC-Regular.ttf` 放入 `public/fonts/`，首次匯出時會 `fetch` 並 base64 快取
+- 找不到字型檔時，`ExportDialog` 會顯示明確訊息，引導使用者改用「網頁列印」另存 PDF
 
 ---
 
