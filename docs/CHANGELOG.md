@@ -4,6 +4,24 @@
 
 ---
 
+## 2026-04-20 — Phase 2 核心頁面（檢查表列表 / 新增編輯 / 量具管理）
+
+- 將 `src/services/api.ts` 所有公開函式改為 `async`，回傳 Promise，與 Phase 5 後端切換時簽名保持一致（符合 `.claude/rules/api-design.md`）
+- 新增 `views/ChecklistListView.vue`：
+  - 以 `v-data-table` 顯示檢查表列表，含序號 / 文件名稱 / 存檔時間 / 操作欄
+  - 點擊列導向預覽頁，操作欄提供編輯、刪除按鈕
+  - 刪除使用 `v-dialog` 二次確認
+- 新增 `views/ChecklistEditView.vue`：
+  - 新增（`/checklist/new`）與編輯（`/checklist/:id/edit`）共用同一元件
+  - 文件名稱預設 `自主檢查表-YYYY-MM-DD`，可編輯，含 200 字元 counter
+  - 儲存後導向預覽頁
+- 新增 `components/ChecklistTable.vue`：圖面位置 / 量具 / 檢驗項目 / 備註四欄編輯表格，含新增列、刪除列。檢驗項目與備註的語音輸入功能留待 Phase 3 `SpeechInputField` 整合
+- 新增 `components/GaugeSelect.vue`：`v-autocomplete` + 即時新增量具對話框，emit `gauge-created` 通知父層同步
+- 新增 `views/GaugeManageView.vue`：量具列表 + 新增 / 刪除（含 `v-dialog` 確認對話框）
+- `src/router/index.ts`：移除上述 View 的 placeholder，改用 `() => import(...)` 動態載入；預覽頁仍為 Phase 3 placeholder
+
+---
+
 ## 2026-04-20 — 建立 ESLint / Prettier / pre-commit hook 及環境變數範本
 
 - 安裝 ESLint 10 + Prettier 3，採用 Vue 官方 flat config（`eslint-plugin-vue` + `@vue/eslint-config-typescript` + `@vue/eslint-config-prettier`）

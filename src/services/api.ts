@@ -7,6 +7,8 @@ import type { Checklist, ChecklistInput, ChecklistSummary, ChecklistUpdate, Gaug
  * 目前以 localStorage 模擬後端，Phase 5 將整支替換為呼叫
  * `VITE_API_BASE_URL` 對應的 speak-excel-api（Express + Supabase）。
  * 頁面與元件一律透過此模組存取資料，禁止直接操作 localStorage / fetch。
+ *
+ * 所有公開函式皆為 async，保持與未來後端呼叫一致的簽名。
  */
 
 const STORAGE_KEYS = {
@@ -58,17 +60,17 @@ function sanitizeGaugeName(name: string): string {
 
 // ---------- Checklist ----------
 
-export function getChecklists(): ChecklistSummary[] {
+export async function getChecklists(): Promise<ChecklistSummary[]> {
   return readStore<Checklist>(STORAGE_KEYS.checklists)
     .map(({ id, name, createdAt, updatedAt }) => ({ id, name, createdAt, updatedAt }))
     .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
 }
 
-export function getChecklist(id: string): Checklist | null {
+export async function getChecklist(id: string): Promise<Checklist | null> {
   return readStore<Checklist>(STORAGE_KEYS.checklists).find((c) => c.id === id) ?? null
 }
 
-export function createChecklist(data: ChecklistInput): Checklist {
+export async function createChecklist(data: ChecklistInput): Promise<Checklist> {
   const now = nowIso()
   const checklist: Checklist = {
     id: uuidv4(),
@@ -83,7 +85,7 @@ export function createChecklist(data: ChecklistInput): Checklist {
   return checklist
 }
 
-export function updateChecklist(id: string, data: ChecklistUpdate): Checklist {
+export async function updateChecklist(id: string, data: ChecklistUpdate): Promise<Checklist> {
   const all = readStore<Checklist>(STORAGE_KEYS.checklists)
   const idx = all.findIndex((c) => c.id === id)
   if (idx === -1) throw new Error(`找不到檢查表：${id}`)
@@ -99,7 +101,7 @@ export function updateChecklist(id: string, data: ChecklistUpdate): Checklist {
   return next
 }
 
-export function deleteChecklist(id: string): void {
+export async function deleteChecklist(id: string): Promise<void> {
   const all = readStore<Checklist>(STORAGE_KEYS.checklists)
   writeStore(
     STORAGE_KEYS.checklists,
@@ -109,13 +111,13 @@ export function deleteChecklist(id: string): void {
 
 // ---------- Gauge ----------
 
-export function getGauges(): Gauge[] {
+export async function getGauges(): Promise<Gauge[]> {
   return readStore<Gauge>(STORAGE_KEYS.gauges).sort((a, b) =>
     a.name.localeCompare(b.name, 'zh-Hant'),
   )
 }
 
-export function createGauge(name: string): Gauge {
+export async function createGauge(name: string): Promise<Gauge> {
   const cleanName = sanitizeGaugeName(name)
   const all = readStore<Gauge>(STORAGE_KEYS.gauges)
   if (all.some((g) => g.name === cleanName)) {
@@ -131,7 +133,7 @@ export function createGauge(name: string): Gauge {
   return gauge
 }
 
-export function deleteGauge(id: string): void {
+export async function deleteGauge(id: string): Promise<void> {
   const all = readStore<Gauge>(STORAGE_KEYS.gauges)
   writeStore(
     STORAGE_KEYS.gauges,
