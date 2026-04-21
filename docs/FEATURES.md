@@ -95,3 +95,13 @@
 
 前端唯一需要變動的是 `src/services/api.ts`：將 localStorage 實作替換為 HTTP fetch 呼叫。
 後端 API 基底 URL 從環境變數 `VITE_API_BASE_URL` 讀取，所有頁面元件無需修改。
+
+詳細實作計劃：[`docs/plans/2026-04-21-phase5-後端整合.md`](./plans/2026-04-21-phase5-後端整合.md)
+
+規劃範圍（摘要）：
+
+- 新增 `src/services/http.ts`（fetch wrapper、base URL、error normalization、auth token 預留 hook、401 custom event）
+- 新增 `src/services/apiError.ts`（統一錯誤型別）
+- `src/services/api.ts` 公開函式簽名不變，內部改為呼叫 `http.ts`；保留 `sanitizeXxxName` 前置驗證
+- 環境變數：`.env.development` 預設 `VITE_API_BASE_URL=http://localhost:3000/api`；部署由 CI / `.env.production` 注入
+- 登入功能不在本階段實作，但在 http 層預留 `Authorization` 注入與 401 事件分派，供 Phase 6 接入

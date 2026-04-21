@@ -4,18 +4,17 @@
 
 ---
 
-## 2026-04-20 — Phase 1 基礎建設（Vuetify / Router / 型別 / API service）
+## 2026-04-21 — 計劃文件整理（Phase 1–4 歸檔 / Phase 5 新增）
 
-- 更新 `src/main.ts`：掛載 Vuetify 3 與 vue-router
-- 更新 `src/App.vue`：加入 `<v-app>` 外框、AppBar（含量具管理連結）、`<RouterView>`
-- 新增 `src/plugins/vuetify.ts`：Vuetify 3 初始化（MDI 圖示、Light 主題、全域元件 defaults）
-- 新增 `src/router/index.ts`：vue-router v4 History 模式，5 條路由含 not-found 補底；Phase 1 各 View 以 placeholder 佔位
-- 新增 `src/types/index.ts`：
-  - `ChecklistRow` / `Checklist` / `ChecklistSummary` / `Gauge` interface
-  - `ChecklistInput` / `ChecklistUpdate` utility type
-  - `ExportFormat` 聯合型別（`'excel' | 'pdf' | 'print'`）
-- 新增 `src/services/api.ts`：以 localStorage 實作全部 8 支公開函式；含輸入驗證（trim、長度限制、重複名稱檢查）
-- 新增 `src/shims.d.ts`：宣告 `vuetify/styles` 及 `@mdi/font/css/materialdesignicons.css` 模組，解決 TS2882 型別錯誤
+- 將已完成的 `docs/plans/2026-04-16-自主檢查表系統.md` 以 `git mv` 搬移至 `docs/plans/archive/`，保留 git 歷史
+- 新增 `docs/plans/2026-04-21-phase5-後端整合.md`：展開前端側的後端整合實作計劃
+  - API contract 假設（REST 路由、錯誤格式 `{ error, code? }`）
+  - 新檔：`src/services/http.ts`、`src/services/apiError.ts`；新增 `.env.development` / `.env.production`
+  - `http.ts` 職責：base URL、JSON 解析、timeout（AbortController 10s）、error normalization、`getAuthToken()` 預留 hook、401 → `window.dispatchEvent('auth:unauthorized')`
+  - `api.ts` 公開函式簽名鎖定不變（符合 `.claude/rules/api-design.md`），僅替換內部實作；`sanitizeXxxName` 保留作前置驗證
+  - UI 配套：各 View 的 loading / 全域 snackbar 錯誤顯示；不做樂觀更新
+  - 不含自動遷移 localStorage 舊資料；登入功能延後至 Phase 6（預留 hook / event）
+- 更新 `docs/FEATURES.md`：Phase 5 區塊補上 plan 連結與規劃摘要
 
 ---
 
@@ -65,6 +64,21 @@
 - 新增 `components/GaugeSelect.vue`：`v-autocomplete` + 即時新增量具對話框，emit `gauge-created` 通知父層同步
 - 新增 `views/GaugeManageView.vue`：量具列表 + 新增 / 刪除（含 `v-dialog` 確認對話框）
 - `src/router/index.ts`：移除上述 View 的 placeholder，改用 `() => import(...)` 動態載入；預覽頁仍為 Phase 3 placeholder
+
+---
+
+## 2026-04-20 — Phase 1 基礎建設（Vuetify / Router / 型別 / API service）
+
+- 更新 `src/main.ts`：掛載 Vuetify 3 與 vue-router
+- 更新 `src/App.vue`：加入 `<v-app>` 外框、AppBar（含量具管理連結）、`<RouterView>`
+- 新增 `src/plugins/vuetify.ts`：Vuetify 3 初始化（MDI 圖示、Light 主題、全域元件 defaults）
+- 新增 `src/router/index.ts`：vue-router v4 History 模式，5 條路由含 not-found 補底；Phase 1 各 View 以 placeholder 佔位
+- 新增 `src/types/index.ts`：
+  - `ChecklistRow` / `Checklist` / `ChecklistSummary` / `Gauge` interface
+  - `ChecklistInput` / `ChecklistUpdate` utility type
+  - `ExportFormat` 聯合型別（`'excel' | 'pdf' | 'print'`）
+- 新增 `src/services/api.ts`：以 localStorage 實作全部 8 支公開函式；含輸入驗證（trim、長度限制、重複名稱檢查）
+- 新增 `src/shims.d.ts`：宣告 `vuetify/styles` 及 `@mdi/font/css/materialdesignicons.css` 模組，解決 TS2882 型別錯誤
 
 ---
 
