@@ -4,6 +4,32 @@
 
 ---
 
+## 2026-04-21 — UI / Navigation 優化
+
+- `src/style.css` 清除 Vite starter template 殘留樣式（`#app` 寬度限制、`:root` 強制深色、`.hero` / `#next-steps` / `#docs` 等），只保留 `html/body` reset、`#app { min-height: 100vh }` 與 `@media print .no-print` 規則。先前頁面黑底、元件擠在同一行的根因
+- `src/plugins/vuetify.ts`：
+  - primary 由 `#1976D2` 調為工業感深藍 `#1E3A8A`；`secondary` / `accent` / `error` / `info` / `success` / `warning` 色票同步換成 Tailwind slate / sky / red / blue / green / amber 等級；補齊 `background` (`#F8FAFC`) 與 `surface` (`#FFFFFF`)
+  - 改為顯式 `import * as components` / `import * as directives` 並在 `createVuetify` 註冊，避免 tree-shaking 後元件缺失
+  - 全域 defaults 新增 `VCard` 圓角 (`rounded: 'lg'`) 與 `VAppBar` flat
+- `src/App.vue` 重寫導覽結構：
+  - 新增 `v-navigation-drawer`：桌機常駐、手機 temporary（以 `useDisplay().mobile` 切換）；主選單含「檢查表列表 / 新增檢查表 / 量具管理」
+  - `v-app-bar` 加入 nav icon 切換 drawer、標題加 `mdi-clipboard-check-outline` icon
+  - drawer append 區顯示產品名稱與版本資訊
+  - `@media print` 同步隱藏 `v-navigation-drawer` 與 `.no-print`，並清除 `v-main` / `v-container` 列印時的 padding
+- 各 View 標題統一為 `text-h4 font-weight-medium` + 副標（`text-body-2 text-medium-emphasis`），提升視覺層次
+- `ChecklistListView`：空資料改用 `v-empty-state` 取代 `no-data-text`，含 icon、描述、新增按鈕 CTA
+- 依賴與建置設定：
+  - `package.json` 新增 `vite-plugin-vuetify`（autoImport）與 `sass` / `sass-embedded` / `sass-loader`（Vuetify SCSS 編譯）
+  - `vite.config.ts` 載入 `vite-plugin-vuetify({ autoImport: true })`
+  - `src/main.ts` 補上 `import 'vuetify/styles'` 確保 SSR-like 情境（Vitest / preview）也能載入樣式
+- 靜態資源與 HTML：
+  - `index.html` 標題改為「自主檢查表系統」；favicon 從 `favicon.svg` 換成 `favicon.ico`
+  - 新增 `public/favicon.ico`、`src/assets/favicon.ico`、`src/assets/apple-touch-icon.png`
+  - 移除 Vite starter 遺留資產：`public/favicon.svg`、`public/icons.svg`、`src/assets/hero.png`、`src/assets/vite.svg`、`src/assets/vue.svg`
+- 註：沿用 light 主題，不再依賴 `prefers-color-scheme`（原 starter css 會強制轉深色，與 Vuetify 主題衝突）
+
+---
+
 ## 2026-04-21 — 計劃文件整理（Phase 1–4 歸檔 / Phase 5 新增）
 
 - 將已完成的 `docs/plans/2026-04-16-自主檢查表系統.md` 以 `git mv` 搬移至 `docs/plans/archive/`，保留 git 歷史

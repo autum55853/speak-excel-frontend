@@ -73,10 +73,13 @@ onMounted(loadChecklists)
 
 <template>
   <div>
-    <div class="d-flex align-center mb-4">
-      <h1 class="text-h5">檢查表列表</h1>
+    <div class="d-flex align-center flex-wrap ga-3 mb-6">
+      <div>
+        <h1 class="text-h4 font-weight-medium">檢查表列表</h1>
+        <div class="text-body-2 text-medium-emphasis mt-1">管理所有已建立的自主檢查表文件</div>
+      </div>
       <v-spacer />
-      <v-btn color="primary" prepend-icon="mdi-plus" :to="{ name: 'checklist-new' }">
+      <v-btn color="primary" size="large" prepend-icon="mdi-plus" :to="{ name: 'checklist-new' }">
         新增文件
       </v-btn>
     </div>
@@ -92,13 +95,27 @@ onMounted(loadChecklists)
       {{ errorMessage }}
     </v-alert>
 
-    <v-card>
+    <v-card v-if="!loading && items.length === 0" class="pa-8">
+      <v-empty-state
+        icon="mdi-clipboard-text-off-outline"
+        title="尚無檢查表"
+        text="點擊右上角「新增文件」開始建立第一份檢查表"
+      >
+        <template #actions>
+          <v-btn color="primary" prepend-icon="mdi-plus" :to="{ name: 'checklist-new' }">
+            新增文件
+          </v-btn>
+        </template>
+      </v-empty-state>
+    </v-card>
+
+    <v-card v-else>
       <v-data-table
         :headers="headers"
         :items="items"
         :loading="loading"
         hover
-        no-data-text="尚無檢查表，點右上角「新增文件」開始建立"
+        no-data-text="尚無檢查表"
         loading-text="載入中..."
         items-per-page-text="每頁顯示筆數"
         @click:row="(_: unknown, { item }: { item: ChecklistSummary }) => goPreview(item)"

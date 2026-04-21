@@ -79,8 +79,11 @@ onMounted(loadGauges)
 
 <template>
   <div>
-    <div class="d-flex align-center mb-4">
-      <h1 class="text-h5">量具管理</h1>
+    <div class="d-flex align-center flex-wrap ga-3 mb-6">
+      <div>
+        <h1 class="text-h4 font-weight-medium">量具管理</h1>
+        <div class="text-body-2 text-medium-emphasis mt-1">新增、刪除可供檢查表選用的量具</div>
+      </div>
     </div>
 
     <v-alert

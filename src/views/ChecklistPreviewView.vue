@@ -62,17 +62,16 @@ onMounted(load)
 
 <template>
   <div>
-    <div class="d-flex align-center mb-4 no-print">
-      <v-btn
-        icon="mdi-arrow-left"
-        variant="text"
-        aria-label="返回列表"
-        class="mr-2"
-        @click="goBack"
-      />
-      <h1 class="text-h5">檢查表預覽</h1>
+    <div class="d-flex align-center flex-wrap ga-3 mb-6 no-print">
+      <v-btn icon="mdi-arrow-left" variant="text" aria-label="返回列表" @click="goBack" />
+      <div>
+        <h1 class="text-h4 font-weight-medium">檢查表預覽</h1>
+        <div class="text-body-2 text-medium-emphasis mt-1">
+          檢視文件內容並匯出為 Excel / PDF / 列印
+        </div>
+      </div>
       <v-spacer />
-      <v-btn class="mr-2" variant="text" prepend-icon="mdi-pencil" @click="goEdit">重新編輯</v-btn>
+      <v-btn variant="text" prepend-icon="mdi-pencil" @click="goEdit">重新編輯</v-btn>
       <v-btn color="primary" prepend-icon="mdi-export" :disabled="!checklist" @click="handleExport">
         匯出
       </v-btn>

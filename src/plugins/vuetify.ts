@@ -1,9 +1,13 @@
 import 'vuetify/styles'
 import '@mdi/font/css/materialdesignicons.css'
 import { createVuetify } from 'vuetify'
+import * as components from 'vuetify/components'
+import * as directives from 'vuetify/directives'
 import { aliases, mdi } from 'vuetify/iconsets/mdi'
 
 export const vuetify = createVuetify({
+  components,
+  directives,
   icons: {
     defaultSet: 'mdi',
     aliases,
@@ -15,13 +19,15 @@ export const vuetify = createVuetify({
       light: {
         dark: false,
         colors: {
-          primary: '#1976D2',
-          secondary: '#424242',
-          accent: '#82B1FF',
-          error: '#D32F2F',
-          info: '#2196F3',
-          success: '#388E3C',
-          warning: '#F57C00',
+          primary: '#1E3A8A',
+          secondary: '#475569',
+          accent: '#0EA5E9',
+          error: '#DC2626',
+          info: '#2563EB',
+          success: '#15803D',
+          warning: '#D97706',
+          background: '#F8FAFC',
+          surface: '#FFFFFF',
         },
       },
     },
@@ -31,5 +37,7 @@ export const vuetify = createVuetify({
     VTextField: { variant: 'outlined', density: 'comfortable' },
     VSelect: { variant: 'outlined', density: 'comfortable' },
     VAutocomplete: { variant: 'outlined', density: 'comfortable' },
+    VCard: { rounded: 'lg' },
+    VAppBar: { flat: true },
   },
 })

@@ -21,8 +21,8 @@ Phase 1-4（前端）開發期間，api.ts 以 localStorage 模擬後端；Phase
 
 ```
 speak-excel/
-├── index.html                   # Vite HTML 進入點
-├── vite.config.ts               # Vite 設定（亦含 Vitest test 區塊）
+├── index.html                   # Vite HTML 進入點（title、favicon）
+├── vite.config.ts               # Vite 設定（亦含 Vitest test 區塊、vite-plugin-vuetify）
 ├── tsconfig.json                # TypeScript 根設定（引用其他 tsconfig）
 ├── tsconfig.app.json            # 前端程式碼的 TS 設定
 ├── tsconfig.node.json           # Vite config 的 TS 設定
@@ -30,11 +30,12 @@ speak-excel/
 ├── package.json
 ├── src/
 │   ├── main.ts                  # 應用程式進入點，掛載 Vue + Vuetify + Router
-│   ├── App.vue                  # 根元件，含 AppBar 與 <RouterView>
+│   ├── App.vue                  # 根元件，含 AppBar、NavigationDrawer 與 <RouterView>
 │   ├── shims.d.ts               # CSS 側效 import 的 TS 模組宣告（vuetify/styles 等）
-│   ├── style.css                # 全域樣式
+│   ├── style.css                # 全域樣式（reset + `@media print` .no-print）
+│   ├── assets/                  # 應用內資源（favicon、apple-touch-icon 等）
 │   ├── plugins/
-│   │   └── vuetify.ts           # Vuetify 3 初始化（主題、MDI 圖示、元件 defaults）
+│   │   └── vuetify.ts           # Vuetify 3 初始化（主題、MDI 圖示、元件 defaults、components/directives 註冊）
 │   ├── router/
 │   │   └── index.ts             # vue-router v4 History 模式路由設定
 │   ├── types/
@@ -58,7 +59,7 @@ speak-excel/
 │   ├── plans/                   # 進行中開發計畫
 │   └── plans/archive/           # 已完成計畫歸檔
 ├── tests/                       # Vitest 測試
-└── public/                      # 靜態資源
+└── public/                      # 靜態資源（favicon.ico、fonts/ 中文字型等）
 ```
 
 ---

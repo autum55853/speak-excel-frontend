@@ -101,10 +101,15 @@ onMounted(initialize)
 
 <template>
   <div>
-    <div class="d-flex align-center mb-4">
-      <h1 class="text-h5">{{ isEdit ? '編輯檢查表' : '新增檢查表' }}</h1>
+    <div class="d-flex align-center flex-wrap ga-3 mb-6">
+      <div>
+        <h1 class="text-h4 font-weight-medium">{{ isEdit ? '編輯檢查表' : '新增檢查表' }}</h1>
+        <div class="text-body-2 text-medium-emphasis mt-1">
+          {{ isEdit ? '修改現有檢查表內容' : '建立一份新的自主檢查表' }}
+        </div>
+      </div>
       <v-spacer />
-      <v-btn class="mr-2" variant="text" :disabled="saving" @click="handleCancel">取消</v-btn>
+      <v-btn variant="text" :disabled="saving" @click="handleCancel">取消</v-btn>
       <v-btn color="primary" prepend-icon="mdi-content-save" :loading="saving" @click="handleSave">
         儲存
       </v-btn>
