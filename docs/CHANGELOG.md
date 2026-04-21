@@ -4,6 +4,21 @@
 
 ---
 
+## 2026-04-20 — Phase 1 基礎建設（Vuetify / Router / 型別 / API service）
+
+- 更新 `src/main.ts`：掛載 Vuetify 3 與 vue-router
+- 更新 `src/App.vue`：加入 `<v-app>` 外框、AppBar（含量具管理連結）、`<RouterView>`
+- 新增 `src/plugins/vuetify.ts`：Vuetify 3 初始化（MDI 圖示、Light 主題、全域元件 defaults）
+- 新增 `src/router/index.ts`：vue-router v4 History 模式，5 條路由含 not-found 補底；Phase 1 各 View 以 placeholder 佔位
+- 新增 `src/types/index.ts`：
+  - `ChecklistRow` / `Checklist` / `ChecklistSummary` / `Gauge` interface
+  - `ChecklistInput` / `ChecklistUpdate` utility type
+  - `ExportFormat` 聯合型別（`'excel' | 'pdf' | 'print'`）
+- 新增 `src/services/api.ts`：以 localStorage 實作全部 8 支公開函式；含輸入驗證（trim、長度限制、重複名稱檢查）
+- 新增 `src/shims.d.ts`：宣告 `vuetify/styles` 及 `@mdi/font/css/materialdesignicons.css` 模組，解決 TS2882 型別錯誤
+
+---
+
 ## 2026-04-20 — Phase 2 核心頁面（檢查表列表 / 新增編輯 / 量具管理）
 
 - 將 `src/services/api.ts` 所有公開函式改為 `async`，回傳 Promise，與 Phase 5 後端切換時簽名保持一致（符合 `.claude/rules/api-design.md`）
