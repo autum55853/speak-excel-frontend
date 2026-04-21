@@ -32,14 +32,17 @@
   - 「刪除選中列」— 刪除已勾選的列（操作前無需確認對話框，因列內容可復原）
 - 「儲存」按鈕 → 呼叫 `api.createChecklist` 或 `api.updateChecklist` → 導向預覽頁
 
-### 預覽模式（ChecklistPreviewView）⏳
+### 預覽模式（ChecklistPreviewView）✅
 
 行為描述：
 
-- 唯讀表格，顯示完整檢查表內容
+- 唯讀表格，顯示完整檢查表內容（含文件名稱、建立 / 更新時間）
+- 量具欄位顯示邏輯：`gaugeName` 正常顯示；若 `gaugeId` 仍存在但 `gaugeName` 為空，顯示「（已刪除）」
 - 操作按鈕：
+  - 「返回」→ 回到列表頁
   - 「重新編輯」→ 回到 `/checklist/:id/edit`
-  - 「匯出」→ 開啟 `ExportDialog` 選擇匯出格式
+  - 「匯出」→ 開啟 `ExportDialog` 選擇匯出格式（Phase 4 完整實作，Phase 3 僅顯示提示）
+- 含 `@media print` CSS：列印時自動隱藏操作按鈕
 
 ---
 
@@ -55,16 +58,17 @@
 
 ---
 
-## 語音輸入（SpeechInputField）⏳
+## 語音輸入（SpeechInputField）✅
 
 行為描述：
 
 - 顯示方式：一般文字輸入框 + 右側麥克風圖示按鈕
-- 點擊麥克風按鈕：開始錄音（按鈕變紅色脈衝動畫）
+- 點擊麥克風按鈕：開始錄音（按鈕變紅色脈衝動畫 `mic-pulse`）
 - 辨識結果追加至輸入框現有文字後方（中間加空格）
 - 再次點擊按鈕：停止錄音
-- 若瀏覽器不支援 Speech API：麥克風按鈕 disabled，tooltip 顯示「語音輸入僅支援 Chrome / Edge 瀏覽器」
-- 頁面頂部固定顯示一條提示 banner（非 Chrome/Edge 才顯示）
+- 若瀏覽器不支援 Speech API：麥克風按鈕 disabled，`v-tooltip` 顯示「語音輸入僅支援 Chrome / Edge 瀏覽器」
+- 頁面頂部固定顯示一條 `v-alert` 提示 banner（非 Chrome/Edge 才顯示；由 `App.vue` 統一輸出）
+- 底層 composable：`useSpeechRecognition`（`zh-TW` 預設，`onUnmounted` 自動停止）
 
 ---
 

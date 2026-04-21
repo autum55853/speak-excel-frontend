@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { v4 as uuidv4 } from 'uuid'
 import GaugeSelect from './GaugeSelect.vue'
+import SpeechInputField from './SpeechInputField.vue'
 import type { ChecklistRow, Gauge } from '../types'
 
 const props = defineProps<{
@@ -100,18 +101,16 @@ function onGaugeCreated(index: number, gauge: Gauge) {
             />
           </td>
           <td>
-            <v-text-field
+            <SpeechInputField
               :model-value="row.inspectionItem"
               density="compact"
-              hide-details
               @update:model-value="(v: string) => updateField(index, 'inspectionItem', v)"
             />
           </td>
           <td>
-            <v-text-field
+            <SpeechInputField
               :model-value="row.remark"
               density="compact"
-              hide-details
               @update:model-value="(v: string) => updateField(index, 'remark', v)"
             />
           </td>

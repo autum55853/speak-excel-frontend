@@ -19,6 +19,20 @@
 
 ---
 
+## 2026-04-21 — Phase 3 語音輸入 + 預覽模式
+
+- 新增 `src/composables/useSpeechRecognition.ts`：包裝 Web Speech API（`SpeechRecognition` / `webkitSpeechRecognition`），預設 `zh-TW`，暴露 `isSupported` / `isListening` / `toggle`；`onUnmounted` 自動停止
+- 新增 `src/components/SpeechInputField.vue`：`v-text-field` 右側嵌入麥克風按鈕
+  - 支援瀏覽器：按鈕在錄音中顯示紅色 `mic-pulse` CSS 動畫，辨識結果追加至現有文字後方（中間加空格）
+  - 不支援瀏覽器：按鈕 disabled，以 `v-tooltip` 顯示「語音輸入僅支援 Chrome / Edge 瀏覽器」
+- 更新 `src/components/ChecklistTable.vue`：檢驗項目 / 備註兩欄改用 `SpeechInputField`
+- 新增 `src/views/ChecklistPreviewView.vue`：唯讀預覽頁，含返回 / 重新編輯 / 匯出按鈕（匯出功能留待 Phase 4）；量具欄若 `gaugeName` 為空但 `gaugeId` 存在則顯示「（已刪除）」；含 `@media print` 隱藏操作按鈕
+- 更新 `src/router/index.ts`：`checklist-preview` 路由改用 `() => import(...)` 動態載入；移除 Phase 1/2 placeholder，only 保留獨立 `NotFoundView`
+- 更新 `src/App.vue`：非 Chrome / Edge 瀏覽器於 `<v-main>` 頂部固定顯示 `v-alert` 提示；新增全域 `@media print` 隱藏 AppBar 與 `.no-print` 元素
+- 更新 `src/shims.d.ts`：補上 `SpeechRecognition` / `SpeechRecognitionEvent` 等 Web Speech API 型別宣告（lib.dom 未內建）
+
+---
+
 ## 2026-04-20 — Phase 2 核心頁面（檢查表列表 / 新增編輯 / 量具管理）
 
 - 將 `src/services/api.ts` 所有公開函式改為 `async`，回傳 Promise，與 Phase 5 後端切換時簽名保持一致（符合 `.claude/rules/api-design.md`）
