@@ -150,19 +150,24 @@ onMounted(loadGauges)
           {{ formatDateTime(item.createdAt) }}
         </template>
         <template #[`item.actions`]="{ item }">
-          <v-btn
-            icon="mdi-delete"
-            variant="text"
-            size="small"
-            color="error"
-            aria-label="刪除"
-            @click="askDelete(item)"
-          />
+          <v-tooltip text="刪除此量具" location="top">
+            <template #activator="{ props: tooltipProps }">
+              <v-btn
+                v-bind="tooltipProps"
+                icon="mdi-delete"
+                variant="text"
+                size="small"
+                color="error"
+                aria-label="刪除"
+                @click="askDelete(item)"
+              />
+            </template>
+          </v-tooltip>
         </template>
       </v-data-table>
     </v-card>
 
-    <v-dialog v-model="deleteDialog" max-width="420" persistent>
+    <v-dialog v-model="deleteDialog" max-width="420" persistent transition="dialog-top-transition">
       <v-card>
         <v-card-title>確認刪除</v-card-title>
         <v-card-text>
