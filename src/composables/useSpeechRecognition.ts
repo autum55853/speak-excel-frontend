@@ -1,4 +1,5 @@
 import { onUnmounted, ref } from 'vue'
+import { useYatingSpeech } from './useYatingSpeech'
 
 type SpeechRecognitionCtor = new () => SpeechRecognition
 
@@ -13,6 +14,10 @@ function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
 }
 
 export function useSpeechRecognition(onResult: (text: string) => void) {
+  if (import.meta.env.VITE_YATING_API_KEY) {
+    return useYatingSpeech(onResult)
+  }
+
   const isSupported = getSpeechRecognitionCtor() !== null
   const isListening = ref(false)
 
