@@ -4,6 +4,24 @@
 
 ---
 
+## 2026-04-22 — 匯出功能優化（動態 import / CDN 字型 / 列印殘影 / 檔名）
+
+- `src/composables/useExport.ts`：
+  - **Excel 卡頓修正**：`import ExcelJS from 'exceljs'` 由頂層靜態 import 改為 `buildExcelBlob` 內的動態 `await import('exceljs')`，Vite 自動切成獨立 chunk（929 kB），預覽頁首屏不再下載匯出函式庫
+  - `buildPdfDoc` 內同樣改為 `Promise.all([import('jspdf'), import('jspdf-autotable'), loadPdfFont()])` 並行動態載入
+  - **PDF 字型修正**：字型來源由不存在的 `public/fonts/NotoSansTC-Regular.ttf` 改為 jsDelivr CDN（`NotoSansTC-Regular.ttf` 完整 TTF）；以 `cachedFontBase64`（module scope）快取 base64，同一 session 僅下載一次；離線時顯示明確錯誤訊息並引導改用「列印」
+  - TypeScript 頂層保留 `import type { jsPDF }` 供型別推斷
+- `src/views/ChecklistPreviewView.vue`：
+  - **列印另存 PDF 檔名修正**：`load()` 成功後設定 `document.title = \`\${data.name} - 自主檢查表\``，使瀏覽器「另存為 PDF」對話框預設帶入文件名稱
+  - `onUnmounted` 還原 `document.title = '自主檢查表系統'`
+- `src/components/ExportDialog.vue`：
+  - **列印殘影修正（時序）**：「網頁列印」分支關閉 Dialog 後，等待從單一 `requestAnimationFrame`（< 16ms）改為 `setTimeout(resolve, 300)`（Vuetify Dialog 淡出動畫約 225ms），確保 DOM 完全離場後再呼叫 `window.print()`
+- `src/App.vue`：
+  - **列印殘影修正（CSS）**：非 scoped `@media print` 追加 `.v-overlay-container { display: none !important }`，覆蓋 Vuetify `v-dialog` teleport 至 `<body>` 的 overlay 容器，雙重保險防止殘影
+- 計畫文件：`docs/plans/archive/2026-04-22-export-優化.md`
+
+---
+
 ## 2026-04-22 — UI 細節優化（必填標示 / Tooltip / 量具搜尋 / 樣式統一）
 
 - `ChecklistTable.vue`：

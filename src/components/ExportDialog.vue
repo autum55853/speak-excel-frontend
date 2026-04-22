@@ -66,10 +66,11 @@ async function handleChoose(format: ExportFormat) {
       await exportToPdf(props.checklist)
     } else {
       emit('update:modelValue', false)
-      // 先關閉對話框、等重繪後再觸發列印，避免對話框殘影出現在列印預覽
-      await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
-      exportToPrint()
       busyFormat.value = null
+      // Vuetify v-dialog 淡出動畫約 225ms；等 300ms 確保 DOM 完全離場，
+      // 再搭配 App.vue 的 @media print 隱藏 .v-overlay-container 雙重保險
+      await new Promise((resolve) => setTimeout(resolve, 300))
+      exportToPrint()
       return
     }
     emit('update:modelValue', false)

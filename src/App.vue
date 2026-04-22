@@ -99,6 +99,7 @@ function toggleDrawer() {
 @media print {
   .v-app-bar,
   .v-navigation-drawer,
+  .v-overlay-container,
   .no-print {
     display: none !important;
   }

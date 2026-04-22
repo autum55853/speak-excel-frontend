@@ -1,6 +1,4 @@
-import ExcelJS from 'exceljs'
-import { jsPDF } from 'jspdf'
-import { autoTable } from 'jspdf-autotable'
+import type { jsPDF } from 'jspdf'
 import type { Checklist, ChecklistRow } from '../types'
 
 /**
@@ -11,11 +9,15 @@ import type { Checklist, ChecklistRow } from '../types'
  *  - exportToPdf:   透過 jspdf + jspdf-autotable 產生 .pdf
  *  - exportToPrint: 呼叫 window.print()，搭配 @media print CSS
  *
- * PDF 需中文字型檔案：部署時請將 `NotoSansTC-Regular.ttf` 放入 `public/fonts/`，
- * 否則會丟出明確錯誤引導使用者改用「列印」。字型僅載入一次並快取。
+ * 第三方套件（exceljs / jspdf / jspdf-autotable）採動態 import，避免預覽頁首屏
+ * 載入 ~3MB 的匯出函式庫造成主執行緒卡頓；使用者點擊對應匯出按鈕時才下載 chunk。
+ *
+ * PDF 中文字型由 jsDelivr CDN 動態取得 Noto Sans TC TTF，本機快取於記憶體
+ * （`cachedFontBase64`），同一個 session 僅下載一次。
  */
 
-const PDF_FONT_URL = '/fonts/NotoSansTC-Regular.ttf'
+const PDF_FONT_URL =
+  'https://cdn.jsdelivr.net/npm/@expo-google-fonts/noto-sans-tc@0.4.3/400Regular/NotoSansTC_400Regular.ttf'
 const PDF_FONT_NAME = 'NotoSansTC'
 const PDF_FONT_FILENAME = 'NotoSansTC-Regular.ttf'
 
@@ -65,12 +67,12 @@ async function loadPdfFont(): Promise<string> {
     res = await fetch(PDF_FONT_URL)
   } catch {
     throw new Error(
-      `PDF 匯出失敗：無法載入中文字型（${PDF_FONT_URL}）。請將 ${PDF_FONT_FILENAME} 放入 public/fonts/，或改用「列印」功能。`,
+      'PDF 匯出失敗：無法從網路載入中文字型（Noto Sans TC）。請確認網路連線，或改用「列印」功能並選擇「另存為 PDF」。',
     )
   }
   if (!res.ok) {
     throw new Error(
-      `PDF 匯出失敗：找不到中文字型檔（${PDF_FONT_URL}）。請將 ${PDF_FONT_FILENAME} 放入 public/fonts/，或改用「列印」功能。`,
+      `PDF 匯出失敗：中文字型下載錯誤（HTTP ${res.status}）。請稍後再試，或改用「列印」功能並選擇「另存為 PDF」。`,
     )
   }
   const buffer = await res.arrayBuffer()
@@ -79,6 +81,8 @@ async function loadPdfFont(): Promise<string> {
 }
 
 async function buildExcelBlob(checklist: Checklist): Promise<Blob> {
+  const { default: ExcelJS } = await import('exceljs')
+
   const workbook = new ExcelJS.Workbook()
   workbook.creator = 'speak-excel'
   workbook.created = new Date()
@@ -139,9 +143,13 @@ async function buildExcelBlob(checklist: Checklist): Promise<Blob> {
 }
 
 async function buildPdfDoc(checklist: Checklist): Promise<jsPDF> {
-  const fontBase64 = await loadPdfFont()
+  const [{ jsPDF: JsPDF }, { autoTable }, fontBase64] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable'),
+    loadPdfFont(),
+  ])
 
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
+  const doc = new JsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
   doc.addFileToVFS(PDF_FONT_FILENAME, fontBase64)
   doc.addFont(PDF_FONT_FILENAME, PDF_FONT_NAME, 'normal')
   doc.setFont(PDF_FONT_NAME, 'normal')

@@ -85,16 +85,23 @@
 
 - 於預覽頁按「匯出」開啟 `ExportDialog`，對話框列出三種匯出格式：
   1. **Excel (.xlsx)**：`exceljs` 產生含標題列、表頭底色、邊框、欄寬、自動換行的試算表
-  2. **PDF**：`jspdf` + `jspdf-autotable` 產生 A4 直式 PDF，含中文字型
-  3. **網頁列印**：呼叫 `window.print()`，透過 `@media print` CSS 隱藏 AppBar 與操作按鈕
+  2. **PDF**：`jspdf` + `jspdf-autotable` 產生 A4 直式 PDF，含中文字型（Noto Sans TC）
+  3. **網頁列印**：呼叫 `window.print()`，透過 `@media print` CSS 隱藏 AppBar / 操作按鈕 / Dialog overlay
 - 選擇後立即觸發對應動作；匯出中列項顯示 `v-progress-circular`，對話框進入 `persistent` 模式避免誤關
-- 錯誤訊息以 `v-alert` 顯示於對話框內（例：PDF 字型檔載入失敗）
+- 錯誤訊息以 `v-alert` 顯示於對話框內（例：PDF 字型網路下載失敗）
 - 檔名格式：`<文件名稱>.xlsx` / `<文件名稱>.pdf`，去除檔名非法字元 `\ / : * ? " < > |`
+- 網頁列印「另存為 PDF」時，瀏覽器預設檔名取自 `document.title`（載入預覽頁時自動設為文件名稱）
 
-### PDF 中文字型部署
+### 程式碼切割（Code Splitting）
 
-- PDF 需中文字型：將 `NotoSansTC-Regular.ttf` 放入 `public/fonts/`，首次匯出時會 `fetch` 並 base64 快取
-- 找不到字型檔時，`ExportDialog` 會顯示明確訊息，引導使用者改用「網頁列印」另存 PDF
+- `exceljs`（~929 kB）、`jspdf`（~399 kB）、`jspdf-autotable`（~29 kB）均以動態 `import()` 載入
+- Vite 自動切成獨立 chunk；預覽頁首屏不下載匯出函式庫，使用者點擊對應格式才觸發 chunk 請求
+
+### PDF 中文字型
+
+- 字型從 jsDelivr CDN 動態下載 `NotoSansTC_400Regular.ttf`（`@expo-google-fonts/noto-sans-tc@0.4.3`，完整 TTF，約 6.78MB）
+- 以 module scope `cachedFontBase64` 快取，同一 session 僅下載一次；瀏覽器 HTTP 快取後重複使用零延遲
+- 離線或 CDN 不可達時，`ExportDialog` 顯示明確錯誤訊息，引導改用「網頁列印」另存 PDF
 
 ---
 

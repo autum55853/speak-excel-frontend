@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ExportDialog from '../components/ExportDialog.vue'
 import { getChecklist } from '../services/api'
@@ -36,6 +36,8 @@ async function load() {
       return
     }
     checklist.value = data
+    // 讓瀏覽器列印→另存為 PDF 時，預設檔名帶有文件名稱
+    document.title = `${data.name} - 自主檢查表`
   } catch (err) {
     errorMessage.value = err instanceof Error ? err.message : '載入失敗'
   } finally {
@@ -58,6 +60,10 @@ function handleExport() {
 }
 
 onMounted(load)
+
+onUnmounted(() => {
+  document.title = '自主檢查表系統'
+})
 </script>
 
 <template>
