@@ -79,12 +79,12 @@ onMounted(loadGauges)
 
 <template>
   <div>
-    <div class="d-flex align-center flex-wrap ga-3 mb-6">
-      <div>
+    <v-row class="mb-6" dense>
+      <v-col cols="12">
         <h1 class="text-h4 font-weight-medium">量具管理</h1>
         <div class="text-body-2 text-medium-emphasis mt-1">新增、刪除可供檢查表選用的量具</div>
-      </div>
-    </div>
+      </v-col>
+    </v-row>
 
     <v-alert
       v-if="errorMessage"
@@ -98,25 +98,30 @@ onMounted(loadGauges)
     </v-alert>
 
     <v-card class="mb-4 pa-4">
-      <div class="d-flex align-start ga-2">
-        <v-text-field
-          v-model="newName"
-          label="新增量具名稱"
-          maxlength="100"
-          counter
-          :error-messages="createError ? [createError] : []"
-          @keyup.enter="submitCreate"
-        />
-        <v-btn
-          color="primary"
-          prepend-icon="mdi-plus"
-          :loading="creating"
-          class="mt-1"
-          @click="submitCreate"
-        >
-          新增
-        </v-btn>
-      </div>
+      <v-row align="start" dense>
+        <v-col cols="12" sm="9" md="10">
+          <v-text-field
+            v-model="newName"
+            label="新增量具名稱"
+            maxlength="100"
+            counter
+            :error-messages="createError ? [createError] : []"
+            @keyup.enter="submitCreate"
+          />
+        </v-col>
+        <v-col cols="12" sm="3" md="2" class="d-flex">
+          <v-btn
+            color="primary"
+            prepend-icon="mdi-plus"
+            :loading="creating"
+            block
+            class="mt-1"
+            @click="submitCreate"
+          >
+            新增
+          </v-btn>
+        </v-col>
+      </v-row>
     </v-card>
 
     <v-card>

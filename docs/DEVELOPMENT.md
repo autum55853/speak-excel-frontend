@@ -2,15 +2,15 @@
 
 ## 命名規則
 
-| 類別 | 規則 | 範例 |
-|------|------|------|
-| Vue 元件檔案 | PascalCase | `ChecklistTable.vue` |
-| View 元件 | PascalCase + `View` 後綴 | `ChecklistListView.vue` |
-| Composable 檔案 | camelCase + `use` 前綴 | `useSpeechRecognition.ts` |
-| TypeScript 介面 | PascalCase | `interface ChecklistRow` |
-| 資料庫欄位 | snake_case | `checklist_id`, `sort_order` |
-| 前端型別 ID | camelCase | `gaugeId`, `checklistId` |
-| 環境變數 | `VITE_` 前綴（前端用） | `VITE_API_BASE_URL` |
+| 類別            | 規則                     | 範例                         |
+| --------------- | ------------------------ | ---------------------------- |
+| Vue 元件檔案    | PascalCase               | `ChecklistTable.vue`         |
+| View 元件       | PascalCase + `View` 後綴 | `ChecklistListView.vue`      |
+| Composable 檔案 | camelCase + `use` 前綴   | `useSpeechRecognition.ts`    |
+| TypeScript 介面 | PascalCase               | `interface ChecklistRow`     |
+| 資料庫欄位      | snake_case               | `checklist_id`, `sort_order` |
+| 前端型別 ID     | camelCase                | `gaugeId`, `checklistId`     |
+| 環境變數        | `VITE_` 前綴（前端用）   | `VITE_API_BASE_URL`          |
 
 ---
 
@@ -51,13 +51,14 @@
 
 ## 環境變數
 
-| 變數名稱 | 用途 | 必要性 | 預設值 |
-|---------|------|-------|--------|
+| 變數名稱            | 用途              | 必要性         | 預設值                            |
+| ------------------- | ----------------- | -------------- | --------------------------------- |
 | `VITE_API_BASE_URL` | 後端 API 基底 URL | Phase 5 後必要 | 無（Phase 5 前使用 localStorage） |
 
 環境變數放在 `.env`（開發）或 `.env.production`（正式），`.env` 不納入版控（已加入 .gitignore）。
 
 在程式碼中讀取：
+
 ```typescript
 const apiBase = import.meta.env.VITE_API_BASE_URL
 ```
@@ -80,3 +81,17 @@ const apiBase = import.meta.env.VITE_API_BASE_URL
 - 禁止使用 `any` 型別，一律明確宣告型別
 - async/await 取代 .then() 鏈式呼叫
 - 錯誤處理：預期內的錯誤（如量具名稱重複）顯示 UI 提示，非預期錯誤使用 console.error 記錄
+
+---
+
+## Layout / RWD 規範
+
+頁面切版（View 頁首、主要區塊）一律使用 Vuetify 3 的 Grid System：
+
+- 使用 `<v-row>` 與 `<v-col>` 取代 `d-flex` 做整塊頁面布局
+- `<v-col>` **必須**明確標註 RWD 斷點：至少提供 `cols`（手機預設），並視需要加上 `sm` / `md` / `lg`
+- 需要左右兩欄（例：標題 vs. 動作按鈕）時，建議 `cols="12" md="8"` + `cols="12" md="4"`；手機會自動堆疊為上下兩列
+- 右側對齊用 `class="d-flex justify-md-end"`（手機維持靠左、桌機靠右）
+- **元件內部微布局**（如表格 th 內的圖示按鈕、`v-text-field` 的 `append-inner`）屬元件級，仍可用 `d-flex`，不強制改 Grid
+
+> 參考 `.claude/rules/frontend.md` 的「排版與 RWD 規範」章節。

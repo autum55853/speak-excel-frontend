@@ -73,16 +73,17 @@ onMounted(loadChecklists)
 
 <template>
   <div>
-    <div class="d-flex align-center flex-wrap ga-3 mb-6">
-      <div>
+    <v-row align="center" class="mb-6" dense>
+      <v-col cols="12" md="8">
         <h1 class="text-h4 font-weight-medium">檢查表列表</h1>
         <div class="text-body-2 text-medium-emphasis mt-1">管理所有已建立的自主檢查表文件</div>
-      </div>
-      <v-spacer />
-      <v-btn color="primary" size="large" prepend-icon="mdi-plus" :to="{ name: 'checklist-new' }">
-        新增文件
-      </v-btn>
-    </div>
+      </v-col>
+      <v-col cols="12" md="4" class="d-flex justify-start justify-md-end">
+        <v-btn color="primary" size="large" prepend-icon="mdi-plus" :to="{ name: 'checklist-new' }">
+          新增文件
+        </v-btn>
+      </v-col>
+    </v-row>
 
     <v-alert
       v-if="errorMessage"

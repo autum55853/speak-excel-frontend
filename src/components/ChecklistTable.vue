@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 import GaugeSelect from './GaugeSelect.vue'
 import SpeechInputField from './SpeechInputField.vue'
+import { createGauge } from '../services/api'
 import type { ChecklistRow, Gauge } from '../types'
 
 const props = defineProps<{
@@ -13,6 +15,17 @@ const emit = defineEmits<{
   'update:rows': [rows: ChecklistRow[]]
   'gauge-created': [gauge: Gauge]
 }>()
+
+const newGaugeDialog = ref(false)
+const newGaugeName = ref('')
+const creating = ref(false)
+const createError = ref('')
+
+const canAddRow = computed(() => {
+  if (props.rows.length === 0) return true
+  const last = props.rows[props.rows.length - 1]
+  return last.position.trim() !== '' && last.gaugeId !== '' && last.inspectionItem.trim() !== ''
+})
 
 function emitUpdate(next: ChecklistRow[]) {
   emit('update:rows', next)
@@ -38,6 +51,7 @@ function onGaugeChange(index: number, gaugeId: string) {
 }
 
 function addRow() {
+  if (!canAddRow.value) return
   const next: ChecklistRow[] = [
     ...props.rows,
     {
@@ -57,12 +71,24 @@ function removeRow(index: number) {
   emitUpdate(next)
 }
 
-function onGaugeCreated(index: number, gauge: Gauge) {
-  emit('gauge-created', gauge)
-  const next = props.rows.map((row, i) =>
-    i === index ? { ...row, gaugeId: gauge.id, gaugeName: gauge.name } : row,
-  )
-  emitUpdate(next)
+function openCreateGaugeDialog() {
+  newGaugeName.value = ''
+  createError.value = ''
+  newGaugeDialog.value = true
+}
+
+async function submitCreateGauge() {
+  createError.value = ''
+  creating.value = true
+  try {
+    const gauge = await createGauge(newGaugeName.value)
+    emit('gauge-created', gauge)
+    newGaugeDialog.value = false
+  } catch (err) {
+    createError.value = err instanceof Error ? err.message : '新增量具失敗'
+  } finally {
+    creating.value = false
+  }
 }
 </script>
 
@@ -73,7 +99,19 @@ function onGaugeCreated(index: number, gauge: Gauge) {
         <tr>
           <th class="col-index">#</th>
           <th class="col-position">圖面位置</th>
-          <th class="col-gauge">量具</th>
+          <th class="col-gauge">
+            <div class="d-flex align-center ga-2">
+              <span>量具</span>
+              <v-btn
+                icon="mdi-plus"
+                size="x-small"
+                variant="tonal"
+                color="primary"
+                aria-label="新增量具"
+                @click="openCreateGaugeDialog"
+              />
+            </div>
+          </th>
           <th class="col-item">檢驗項目</th>
           <th class="col-remark">備註</th>
           <th class="col-action">操作</th>
@@ -86,7 +124,8 @@ function onGaugeCreated(index: number, gauge: Gauge) {
             <v-text-field
               :model-value="row.position"
               density="compact"
-              hide-details
+              hint="必填"
+              persistent-hint
               maxlength="100"
               @update:model-value="(v: string) => updateField(index, 'position', v)"
             />
@@ -95,15 +134,20 @@ function onGaugeCreated(index: number, gauge: Gauge) {
             <GaugeSelect
               :model-value="row.gaugeId"
               :gauges="props.gauges"
+              label=""
               density="compact"
+              hint="必填"
+              persistent-hint
+              hide-create-button
               @update:model-value="(v: string) => onGaugeChange(index, v)"
-              @gauge-created="(g: Gauge) => onGaugeCreated(index, g)"
             />
           </td>
           <td>
             <SpeechInputField
               :model-value="row.inspectionItem"
               density="compact"
+              hint="必填"
+              persistent-hint
               @update:model-value="(v: string) => updateField(index, 'inspectionItem', v)"
             />
           </td>
@@ -115,14 +159,19 @@ function onGaugeCreated(index: number, gauge: Gauge) {
             />
           </td>
           <td class="text-center">
-            <v-btn
-              icon="mdi-delete"
-              size="small"
-              variant="text"
-              color="error"
-              aria-label="刪除此列"
-              @click="removeRow(index)"
-            />
+            <v-tooltip text="刪除此列" location="top">
+              <template #activator="{ props: tooltipProps }">
+                <v-btn
+                  v-bind="tooltipProps"
+                  icon="mdi-delete"
+                  size="small"
+                  variant="text"
+                  color="error"
+                  aria-label="刪除此列"
+                  @click="removeRow(index)"
+                />
+              </template>
+            </v-tooltip>
           </td>
         </tr>
         <tr v-if="props.rows.length === 0">
@@ -133,9 +182,33 @@ function onGaugeCreated(index: number, gauge: Gauge) {
       </tbody>
     </v-table>
 
-    <div class="mt-3">
-      <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addRow">新增一列</v-btn>
+    <div class="d-flex justify-end mt-3">
+      <v-btn prepend-icon="mdi-plus" variant="tonal" :disabled="!canAddRow" @click="addRow">
+        新增一列
+      </v-btn>
     </div>
+
+    <v-dialog v-model="newGaugeDialog" max-width="420" persistent>
+      <v-card>
+        <v-card-title>新增量具</v-card-title>
+        <v-card-text>
+          <v-text-field
+            v-model="newGaugeName"
+            label="量具名稱"
+            maxlength="100"
+            counter
+            autofocus
+            :error-messages="createError ? [createError] : []"
+            @keyup.enter="submitCreateGauge"
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn :disabled="creating" @click="newGaugeDialog = false">取消</v-btn>
+          <v-btn color="primary" :loading="creating" @click="submitCreateGauge">新增</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -144,12 +217,17 @@ function onGaugeCreated(index: number, gauge: Gauge) {
   width: 48px;
 }
 .checklist-edit-table .col-action {
-  width: 72px;
+  width: 96px;
 }
 .checklist-edit-table .col-position {
   width: 140px;
 }
 .checklist-edit-table .col-gauge {
-  width: 220px;
+  width: 240px;
+}
+.checklist-edit-table tbody td {
+  vertical-align: middle;
+  padding-top: 8px;
+  padding-bottom: 8px;
 }
 </style>

@@ -8,6 +8,9 @@ const props = defineProps<{
   gauges: Gauge[]
   label?: string
   density?: 'default' | 'comfortable' | 'compact'
+  hideCreateButton?: boolean
+  hint?: string
+  persistentHint?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -57,7 +60,7 @@ async function submitCreate() {
 </script>
 
 <template>
-  <div class="d-flex align-center ga-2">
+  <div :class="props.hideCreateButton ? '' : 'd-flex align-center ga-2'">
     <v-autocomplete
       :model-value="selectedId || null"
       :items="props.gauges"
@@ -65,12 +68,15 @@ async function submitCreate() {
       item-value="id"
       :label="props.label ?? '量具'"
       :density="props.density ?? 'comfortable'"
+      :hint="props.hint"
+      :persistent-hint="props.persistentHint"
+      :hide-details="props.hint ? false : true"
       clearable
-      hide-details
       no-data-text="尚無量具，請新增"
       @update:model-value="onSelect"
     />
     <v-btn
+      v-if="!props.hideCreateButton"
       icon="mdi-plus"
       size="small"
       variant="tonal"
@@ -79,7 +85,7 @@ async function submitCreate() {
       @click="openCreateDialog"
     />
 
-    <v-dialog v-model="newGaugeDialog" max-width="420" persistent>
+    <v-dialog v-if="!props.hideCreateButton" v-model="newGaugeDialog" max-width="420" persistent>
       <v-card>
         <v-card-title>新增量具</v-card-title>
         <v-card-text>

@@ -62,20 +62,28 @@ onMounted(load)
 
 <template>
   <div>
-    <div class="d-flex align-center flex-wrap ga-3 mb-6 no-print">
-      <v-btn icon="mdi-arrow-left" variant="text" aria-label="返回列表" @click="goBack" />
-      <div>
-        <h1 class="text-h4 font-weight-medium">檢查表預覽</h1>
-        <div class="text-body-2 text-medium-emphasis mt-1">
-          檢視文件內容並匯出為 Excel / PDF / 列印
+    <v-row align="center" class="mb-6 no-print" dense>
+      <v-col cols="12" md="7" class="d-flex align-center ga-2">
+        <v-btn icon="mdi-arrow-left" variant="text" aria-label="返回列表" @click="goBack" />
+        <div>
+          <h1 class="text-h4 font-weight-medium">檢查表預覽</h1>
+          <div class="text-body-2 text-medium-emphasis mt-1">
+            檢視文件內容並匯出為 Excel / PDF / 列印
+          </div>
         </div>
-      </div>
-      <v-spacer />
-      <v-btn variant="text" prepend-icon="mdi-pencil" @click="goEdit">重新編輯</v-btn>
-      <v-btn color="primary" prepend-icon="mdi-export" :disabled="!checklist" @click="handleExport">
-        匯出
-      </v-btn>
-    </div>
+      </v-col>
+      <v-col cols="12" md="5" class="d-flex ga-2 justify-start justify-md-end">
+        <v-btn variant="text" prepend-icon="mdi-pencil" @click="goEdit">重新編輯</v-btn>
+        <v-btn
+          color="primary"
+          prepend-icon="mdi-export"
+          :disabled="!checklist"
+          @click="handleExport"
+        >
+          匯出
+        </v-btn>
+      </v-col>
+    </v-row>
 
     <ExportDialog v-model="showExportDialog" :checklist="checklist" />
 
@@ -95,20 +103,20 @@ onMounted(load)
     </v-card>
 
     <v-card v-else-if="checklist" class="pa-6 checklist-preview">
-      <div class="d-flex justify-space-between align-end mb-4 flex-wrap ga-2">
-        <div>
+      <v-row align="end" class="mb-4" dense>
+        <v-col cols="12" md="8">
           <div class="text-caption text-medium-emphasis">文件名稱</div>
           <h2 class="text-h5 checklist-title">{{ checklist.name }}</h2>
-        </div>
-        <div class="text-right">
+        </v-col>
+        <v-col cols="12" md="4" class="text-md-right">
           <div class="text-caption text-medium-emphasis">
             建立時間：{{ formatDateTime(checklist.createdAt) }}
           </div>
           <div class="text-caption text-medium-emphasis">
             最後更新：{{ formatDateTime(checklist.updatedAt) }}
           </div>
-        </div>
-      </div>
+        </v-col>
+      </v-row>
 
       <v-table class="checklist-preview-table">
         <thead>

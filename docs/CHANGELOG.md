@@ -4,6 +4,21 @@
 
 ---
 
+## 2026-04-22 — 排版與 RWD 規範對齊
+
+- `.claude/rules/frontend.md` 新增「排版與 RWD 規範」：頁面切版一律使用 Vuetify Grid System（`<v-row>` / `<v-col>`），`<v-col>` 必須明確標註 `cols` / `md` / `lg` 等 RWD 斷點
+- 四個 View 頁面層級的 `d-flex` 區塊改寫為 `v-row` + `v-col`：
+  - `ChecklistListView.vue`：頁首（標題 vs. 「新增文件」按鈕）→ `cols="12" md="8"` + `cols="12" md="4"`，手機堆疊、桌機左右分欄
+  - `ChecklistEditView.vue`：頁首（標題 vs. 取消 / 儲存按鈕）同上
+  - `ChecklistPreviewView.vue`：頁首（返回 + 標題 vs. 重新編輯 / 匯出）→ `md="7"` + `md="5"`；文件資訊列（文件名稱 vs. 建立 / 更新時間）→ `md="8"` + `md="4"`
+  - `GaugeManageView.vue`：頁首 → 單欄 `cols="12"`；新增量具區塊（輸入框 vs. 新增按鈕）→ `cols="12" sm="9" md="10"` + `cols="12" sm="3" md="2"`，按鈕加 `block` 在手機版撐滿寬度
+- 元件內部微布局（表格 th 內的按鈕、`SpeechInputField` 的 `append-inner`、`GaugeSelect` 的 wrapper）維持 `d-flex`，不強制改 Grid
+- 文件更新：
+  - `docs/DEVELOPMENT.md` 新增「Layout / RWD 規範」章節，載明 Grid 使用原則與 `d-flex` 例外
+  - `docs/plans/2026-04-21-phase5-後端整合.md` Step 3 追加 layout 對齊條目，供後續新增 UI 時沿用
+
+---
+
 ## 2026-04-21 — UI / Navigation 優化
 
 - `src/style.css` 清除 Vite starter template 殘留樣式（`#app` 寬度限制、`:root` 強制深色、`.hero` / `#next-steps` / `#docs` 等），只保留 `html/body` reset、`#app { min-height: 100vh }` 與 `@media print .no-print` 規則。先前頁面黑底、元件擠在同一行的根因

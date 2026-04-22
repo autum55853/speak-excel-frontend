@@ -7,6 +7,8 @@ const props = defineProps<{
   density?: 'default' | 'comfortable' | 'compact'
   hideDetails?: boolean
   maxlength?: number
+  hint?: string
+  persistentHint?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -32,7 +34,9 @@ function onInput(v: string) {
       :model-value="props.modelValue"
       :label="props.label"
       :density="props.density ?? 'compact'"
-      :hide-details="props.hideDetails ?? true"
+      :hide-details="props.hint ? false : (props.hideDetails ?? true)"
+      :hint="props.hint"
+      :persistent-hint="props.persistentHint"
       :maxlength="props.maxlength"
       @update:model-value="onInput"
     >
