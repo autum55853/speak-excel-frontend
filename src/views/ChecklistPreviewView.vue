@@ -163,7 +163,9 @@ onMounted(load)
   font-weight: 600;
 }
 .checklist-preview-table td {
-  vertical-align: top;
+  vertical-align: middle;
+  padding-top: 8px;
+  padding-bottom: 8px;
 }
 .text-pre-wrap {
   white-space: pre-wrap;

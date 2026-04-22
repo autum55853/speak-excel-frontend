@@ -15,10 +15,12 @@ const deleteDialog = ref(false)
 const deleteTarget = ref<Gauge | null>(null)
 const deleting = ref(false)
 
+const search = ref('')
+
 const headers = [
   { title: '量具名稱', key: 'name' },
   { title: '建立時間', key: 'createdAt', width: 220 },
-  { title: '操作', key: 'actions', sortable: false, width: 120, align: 'end' as const },
+  { title: '操作', key: 'actions', sortable: false, width: 120, align: 'center' as const },
 ]
 
 function formatDateTime(iso: string): string {
@@ -103,13 +105,13 @@ onMounted(loadGauges)
           <v-text-field
             v-model="newName"
             label="新增量具名稱"
-            maxlength="100"
+            maxlength="50"
             counter
             :error-messages="createError ? [createError] : []"
             @keyup.enter="submitCreate"
           />
         </v-col>
-        <v-col cols="12" sm="3" md="2" class="d-flex">
+        <v-col cols="12" sm="3" md="1" class="d-flex">
           <v-btn
             color="primary"
             prepend-icon="mdi-plus"
@@ -125,10 +127,21 @@ onMounted(loadGauges)
     </v-card>
 
     <v-card>
+      <v-card-text class="pb-0">
+        <v-text-field
+          v-model="search"
+          prepend-inner-icon="mdi-magnify"
+          label="搜尋量具名稱"
+          clearable
+          hide-details
+          density="compact"
+        />
+      </v-card-text>
       <v-data-table
         :headers="headers"
         :items="gauges"
         :loading="loading"
+        :search="search"
         no-data-text="尚無量具，請於上方新增"
         loading-text="載入中..."
         items-per-page-text="每頁顯示筆數"

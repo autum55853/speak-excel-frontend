@@ -98,21 +98,34 @@ async function submitCreateGauge() {
       <thead>
         <tr>
           <th class="col-index">#</th>
-          <th class="col-position">圖面位置</th>
-          <th class="col-gauge">
-            <div class="d-flex align-center ga-2">
-              <span>量具</span>
-              <v-btn
-                icon="mdi-plus"
-                size="x-small"
-                variant="tonal"
-                color="primary"
-                aria-label="新增量具"
-                @click="openCreateGaugeDialog"
-              />
+          <th class="col-position">
+            <div class="d-flex align-center ga-1">
+              圖面位置<span class="text-h6 must-item">*</span>
             </div>
           </th>
-          <th class="col-item">檢驗項目</th>
+          <th class="col-gauge">
+            <div class="d-flex align-center ga-1">
+              <span>量具</span><span class="text-h6 must-item">*</span>
+              <v-tooltip text="新增量具" location="top">
+                <template #activator="{ props: tooltipProps }">
+                  <v-btn
+                    v-bind="tooltipProps"
+                    icon="mdi-plus"
+                    size="x-small"
+                    variant="tonal"
+                    color="primary"
+                    aria-label="新增量具"
+                    @click="openCreateGaugeDialog"
+                  />
+                </template>
+              </v-tooltip>
+            </div>
+          </th>
+          <th class="col-item">
+            <div class="d-flex align-center ga-1">
+              檢驗項目 <span class="text-h6 must-item">*</span>
+            </div>
+          </th>
           <th class="col-remark">備註</th>
           <th class="col-action">操作</th>
         </tr>
@@ -124,9 +137,8 @@ async function submitCreateGauge() {
             <v-text-field
               :model-value="row.position"
               density="compact"
-              hint="必填"
-              persistent-hint
-              maxlength="100"
+              maxlength="50"
+              hide-details
               @update:model-value="(v: string) => updateField(index, 'position', v)"
             />
           </td>
@@ -134,10 +146,8 @@ async function submitCreateGauge() {
             <GaugeSelect
               :model-value="row.gaugeId"
               :gauges="props.gauges"
-              label=""
+              label="請選擇量具"
               density="compact"
-              hint="必填"
-              persistent-hint
               hide-create-button
               @update:model-value="(v: string) => onGaugeChange(index, v)"
             />
@@ -146,8 +156,6 @@ async function submitCreateGauge() {
             <SpeechInputField
               :model-value="row.inspectionItem"
               density="compact"
-              hint="必填"
-              persistent-hint
               @update:model-value="(v: string) => updateField(index, 'inspectionItem', v)"
             />
           </td>
@@ -214,20 +222,19 @@ async function submitCreateGauge() {
 
 <style scoped>
 .checklist-edit-table .col-index {
-  width: 48px;
+  width: 20px;
 }
 .checklist-edit-table .col-action {
-  width: 96px;
+  width: 50px;
 }
 .checklist-edit-table .col-position {
-  width: 140px;
+  width: 120px;
 }
 .checklist-edit-table .col-gauge {
-  width: 240px;
+  width: 200px;
 }
-.checklist-edit-table tbody td {
-  vertical-align: middle;
-  padding-top: 8px;
-  padding-bottom: 8px;
+
+.must-item {
+  color: rgb(228, 67, 67);
 }
 </style>

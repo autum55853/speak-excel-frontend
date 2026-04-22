@@ -4,6 +4,33 @@
 
 ---
 
+## 2026-04-22 — UI 細節優化（必填標示 / Tooltip / 量具搜尋 / 樣式統一）
+
+- `ChecklistTable.vue`：
+  - 必填欄位（圖面位置、量具、檢驗項目）標題加紅色 `*` 標示（`.must-item` CSS class），取代原本各欄位下方 `hint="必填"` / `persistent-hint`
+  - 「新增量具」按鈕加 `v-tooltip`，提示文字「新增量具」
+  - 圖面位置 `maxlength` 由 100 改為 50；移除各欄 `hint` / `persistent-hint`，以 `hide-details` 簡化佈局
+  - 調整欄寬：index 欄 48 → 20px、action 欄 96 → 50px、position 欄 140 → 120px、gauge 欄 240 → 200px
+  - 移除 `tbody td` 的 `vertical-align` / `padding` 樣式（改由 `ChecklistPreviewView` 側管理）
+- `SpeechInputField.vue`：
+  - 改用 `variant="underlined"` 樣式，與 GaugeSelect 視覺一致
+  - 麥克風按鈕加 `v-tooltip`（文字「語音輸入」）；固定 `hide-details`（移除依 hint 決定是否顯示底部說明的邏輯）
+  - 移除 `.speech-input-field :deep(.v-field__append-inner)` scoped CSS
+- `GaugeSelect.vue`：
+  - 改用 `variant="underlined"` 樣式；移除 `clearable` 屬性
+- `ChecklistListView.vue`：
+  - 操作欄對齊由 `end` 改為 `center`
+  - 編輯 / 刪除按鈕分別加 `v-tooltip`（文字「編輯」 / 「刪除此列」）
+- `ChecklistPreviewView.vue`：
+  - 表格 `td` 改為 `vertical-align: middle`，並補 `padding-top/bottom: 8px`
+- `GaugeManageView.vue`：
+  - 操作欄對齊由 `end` 改為 `center`；新增量具名稱輸入框 `maxlength` 由 100 改為 50
+  - 新增搜尋框（`v-model="search"` 綁 `v-data-table :search`），支援量具名稱即時篩選
+  - 按鈕欄 RWD 斷點調整：`md="2"` → `md="1"`
+- 刪除 `src/components/HelloWorld.vue`（Vite starter template 殘留元件）
+
+---
+
 ## 2026-04-22 — 排版與 RWD 規範對齊
 
 - `.claude/rules/frontend.md` 新增「排版與 RWD 規範」：頁面切版一律使用 Vuetify Grid System（`<v-row>` / `<v-col>`），`<v-col>` 必須明確標註 `cols` / `md` / `lg` 等 RWD 斷點

@@ -34,10 +34,11 @@ function onInput(v: string) {
       :model-value="props.modelValue"
       :label="props.label"
       :density="props.density ?? 'compact'"
-      :hide-details="props.hint ? false : (props.hideDetails ?? true)"
+      hide-details
       :hint="props.hint"
       :persistent-hint="props.persistentHint"
       :maxlength="props.maxlength"
+      variant="underlined"
       @update:model-value="onInput"
     >
       <template #append-inner>
@@ -55,29 +56,27 @@ function onInput(v: string) {
             </span>
           </template>
         </v-tooltip>
-
-        <v-btn
-          v-else
-          :icon="isListening ? 'mdi-microphone' : 'mdi-microphone-outline'"
-          :color="isListening ? 'error' : undefined"
-          :class="{ 'mic-pulsing': isListening }"
-          size="small"
-          variant="text"
-          density="comfortable"
-          :aria-label="isListening ? '停止錄音' : '開始語音輸入'"
-          @click.stop="toggle"
-        />
+        <v-tooltip v-else text="語音輸入" location="top">
+          <template #activator="{ props: tooltipProps }">
+            <v-btn
+              v-bind="tooltipProps"
+              :icon="isListening ? 'mdi-microphone' : 'mdi-microphone-outline'"
+              :color="isListening ? 'error' : undefined"
+              :class="{ 'mic-pulsing': isListening }"
+              size="small"
+              variant="text"
+              density="comfortable"
+              :aria-label="isListening ? '停止錄音' : '開始語音輸入'"
+              @click.stop="toggle"
+            />
+          </template>
+        </v-tooltip>
       </template>
     </v-text-field>
   </div>
 </template>
 
 <style scoped>
-.speech-input-field :deep(.v-field__append-inner) {
-  padding-top: 0;
-  align-items: center;
-}
-
 @keyframes mic-pulse {
   0% {
     box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.6);

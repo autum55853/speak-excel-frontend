@@ -18,7 +18,7 @@ const headers = [
   { title: '序號', key: 'index', sortable: false, width: 80 },
   { title: '文件名稱', key: 'name' },
   { title: '存檔時間', key: 'updatedAt', width: 220 },
-  { title: '操作', key: 'actions', sortable: false, width: 160, align: 'end' as const },
+  { title: '操作', key: 'actions', sortable: false, width: 160, align: 'center' as const },
 ]
 
 function formatDateTime(iso: string): string {
@@ -128,21 +128,31 @@ onMounted(loadChecklists)
           {{ formatDateTime(item.updatedAt) }}
         </template>
         <template #[`item.actions`]="{ item }">
-          <v-btn
-            icon="mdi-pencil"
-            variant="text"
-            size="small"
-            aria-label="編輯"
-            @click.stop="goEdit(item)"
-          />
-          <v-btn
-            icon="mdi-delete"
-            variant="text"
-            size="small"
-            color="error"
-            aria-label="刪除"
-            @click.stop="askDelete(item)"
-          />
+          <v-tooltip text="編輯" location="top">
+            <template #activator="{ props: tooltipProps }">
+              <v-btn
+                v-bind="tooltipProps"
+                icon="mdi-pencil"
+                variant="text"
+                size="small"
+                aria-label="編輯"
+                @click.stop="goEdit(item)"
+              />
+            </template>
+          </v-tooltip>
+          <v-tooltip text="刪除此列" location="top">
+            <template #activator="{ props: tooltipProps }">
+              <v-btn
+                v-bind="tooltipProps"
+                icon="mdi-delete"
+                variant="text"
+                size="small"
+                color="error"
+                aria-label="刪除"
+                @click.stop="askDelete(item)"
+              />
+            </template>
+          </v-tooltip>
         </template>
       </v-data-table>
     </v-card>

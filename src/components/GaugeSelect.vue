@@ -71,8 +71,8 @@ async function submitCreate() {
       :hint="props.hint"
       :persistent-hint="props.persistentHint"
       :hide-details="props.hint ? false : true"
-      clearable
       no-data-text="尚無量具，請新增"
+      variant="underlined"
       @update:model-value="onSelect"
     />
     <v-btn
