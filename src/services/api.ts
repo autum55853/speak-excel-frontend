@@ -25,6 +25,7 @@ interface BackendChecklistRow {
   gauge_id: string | null
   inspection_item: string | null
   remark: string | null
+  gauges: { name: string } | null
 }
 
 interface BackendChecklist {
@@ -66,24 +67,24 @@ function mapGauge(g: BackendGauge): Gauge {
   return { id: g.id, name: g.name, createdAt: g.created_at }
 }
 
-function mapRow(r: BackendChecklistRow, gaugeMap: Map<string, string>): ChecklistRow {
+function mapRow(r: BackendChecklistRow): ChecklistRow {
   return {
     id: r.id,
     position: r.position ?? '',
     gaugeId: r.gauge_id ?? '',
-    gaugeName: r.gauge_id ? (gaugeMap.get(r.gauge_id) ?? '') : '',
+    gaugeName: r.gauges?.name ?? '',
     inspectionItem: r.inspection_item ?? '',
     remark: r.remark ?? '',
   }
 }
 
-function mapChecklist(c: BackendChecklist, gaugeMap: Map<string, string>): Checklist {
+function mapChecklist(c: BackendChecklist): Checklist {
   return {
     id: c.id,
     name: c.name,
     createdAt: c.created_at,
     updatedAt: c.updated_at,
-    rows: (c.checklist_rows ?? []).map((r) => mapRow(r, gaugeMap)),
+    rows: (c.checklist_rows ?? []).map(mapRow),
   }
 }
 
@@ -105,14 +106,9 @@ function serializeRows(rows: ChecklistRow[]): object[] {
 
 // ---------- 內部共用 helper ----------
 
-async function fetchGaugeMap(): Promise<Map<string, string>> {
-  const gauges = await request<BackendGauge[]>('/gauges')
-  return new Map(gauges.map((g) => [g.id, g.name]))
-}
-
-async function fetchChecklistById(id: string, gaugeMap: Map<string, string>): Promise<Checklist> {
+async function fetchChecklistById(id: string): Promise<Checklist> {
   const data = await request<BackendChecklist>(`/checklists/${id}`)
-  return mapChecklist(data, gaugeMap)
+  return mapChecklist(data)
 }
 
 // ---------- Checklist ----------
@@ -124,8 +120,7 @@ export async function getChecklists(): Promise<ChecklistSummary[]> {
 
 export async function getChecklist(id: string): Promise<Checklist | null> {
   try {
-    const gaugeMap = await fetchGaugeMap()
-    return await fetchChecklistById(id, gaugeMap)
+    return await fetchChecklistById(id)
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) return null
     throw err
@@ -138,13 +133,10 @@ export async function createChecklist(data: ChecklistInput): Promise<Checklist> 
     method: 'POST',
     body: JSON.stringify({ name, rows: serializeRows(data.rows ?? []) }),
   })
-  // POST 回傳不含 rows，重新 fetch 取得完整資料
-  const gaugeMap = await fetchGaugeMap()
-  return fetchChecklistById(created.id, gaugeMap)
+  return fetchChecklistById(created.id)
 }
 
 export async function updateChecklist(id: string, data: ChecklistUpdate): Promise<Checklist> {
-  // 後端為 PUT 全量替換，若前端只傳部分欄位，先 fetch 補齊
   let name: string
   let rows: ChecklistRow[]
 
@@ -152,8 +144,7 @@ export async function updateChecklist(id: string, data: ChecklistUpdate): Promis
     name = sanitizeChecklistName(data.name)
     rows = data.rows
   } else {
-    const gaugeMap = await fetchGaugeMap()
-    const current = await fetchChecklistById(id, gaugeMap)
+    const current = await fetchChecklistById(id)
     name = data.name !== undefined ? sanitizeChecklistName(data.name) : current.name
     rows = data.rows !== undefined ? data.rows : current.rows
   }
@@ -163,9 +154,7 @@ export async function updateChecklist(id: string, data: ChecklistUpdate): Promis
     body: JSON.stringify({ name, rows: serializeRows(rows) }),
   })
 
-  // PUT 回傳 204，重新 fetch 取得更新後資料
-  const gaugeMap = await fetchGaugeMap()
-  return fetchChecklistById(id, gaugeMap)
+  return fetchChecklistById(id)
 }
 
 export async function deleteChecklist(id: string): Promise<void> {

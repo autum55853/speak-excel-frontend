@@ -4,6 +4,19 @@
 
 ---
 
+## 2026-04-23 — Phase 5 後端整合：api.ts 優化（Steps 3–5）
+
+- `src/services/api.ts`：移除 `fetchGaugeMap()` 與 `gaugeMap: Map<string, string>` 機制
+  - `gaugeName` 改由後端 PostgREST embedded join（`checklist_rows(*, gauges(name))`）提供，`mapRow` 直接讀取 `r.gauges?.name ?? ''`
+  - `BackendChecklistRow` 新增 `gauges: { name: string } | null` 欄位（對應 join 結果）
+  - `mapRow` / `mapChecklist` / `fetchChecklistById` 移除 `gaugeMap` 參數，函式簽名更簡潔
+  - `createChecklist`：從 3 次 API call（POST + GET gauges + GET checklist）減為 2 次（POST + GET checklist）
+  - `updateChecklist` / `getChecklist`：同樣不再額外呼叫 `/gauges`
+- 對應後端：`GET /api/checklists/:id` select 查詢改為 `select('*, checklist_rows(*, gauges(name))')`
+- `vue-tsc --noEmit`、後端 `tsc --noEmit`、Vitest 51/51 全數通過
+
+---
+
 ## 2026-04-23 — Phase 5 後端整合：基礎設施 + api.ts 改寫（Steps 1 & 2）
 
 - 新增 `src/services/apiError.ts`：統一錯誤型別 `ApiError extends Error`，含 `readonly status: number`；以一般欄位宣告取代 parameter property，符合 `erasableSyntaxOnly` TypeScript 編譯選項

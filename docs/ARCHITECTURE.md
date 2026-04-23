@@ -5,15 +5,16 @@
 ```
 瀏覽器（Vue 3 SPA）
     │
-    ├── src/services/api.ts   ← 目前：localStorage 模擬
-    │                            未來：HTTP 呼叫後端 API
+    ├── src/services/api.ts   ← Phase 5 已切換：HTTP 呼叫後端 API
+    │       ├── src/services/http.ts      # fetch wrapper（timeout / 錯誤處理）
+    │       └── src/services/apiError.ts  # ApiError 型別
     │
     └── speak-excel-api（獨立專案）
             └── Express + Supabase PostgreSQL
 ```
 
 前端與後端**完全分離**，透過 `src/services/api.ts` 統一管理 API 呼叫。  
-Phase 1-4（前端）開發期間，api.ts 以 localStorage 模擬後端；Phase 5 後端完成後直接替換實作，頁面元件無需修改。
+Phase 5 已完成後端整合，api.ts 改為 HTTP fetch 呼叫 `speak-excel-api`；頁面元件簽名不變。
 
 ---
 
@@ -128,9 +129,11 @@ type ExportFormat = 'excel' | 'pdf' | 'print'
 
 所有頁面/元件透過此模組存取資料，禁止直接操作 localStorage 或 fetch。
 
-**目前實作**：以 localStorage 模擬（key: `checklists`、`gauges`）  
-**切換至後端**：只需修改 api.ts 的函式實作，頁面元件無需變動  
-**所有函式均為 async**，回傳 Promise，Phase 5 切換後端時簽名保持不變
+**目前實作**：HTTP 呼叫 `speak-excel-api`（Phase 5 已完成切換）  
+**底層**：`http.ts` 封裝 fetch（timeout 10s、`ApiError` 統一錯誤型別）  
+**所有函式均為 async**，回傳 Promise，公開簽名與 localStorage 版本相同  
+**snake_case 轉換**：此層負責後端 snake_case ↔ 前端 camelCase 雙向對應  
+**gaugeName**：透過後端 PostgREST embedded join（`checklist_rows(*, gauges(name))`）取得，不需另外呼叫 `/gauges`
 
 | 函式                        | 回傳型別                      | 說明                                               |
 | --------------------------- | ----------------------------- | -------------------------------------------------- |
