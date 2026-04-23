@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useSnackbar } from '../composables/useSnackbar'
 import { deleteChecklist, getChecklists } from '../services/api'
 import type { ChecklistSummary } from '../types'
 
 const router = useRouter()
+const { show: showSnackbar } = useSnackbar()
 
 const items = ref<ChecklistSummary[]>([])
 const loading = ref(false)
@@ -56,13 +58,17 @@ function askDelete(item: ChecklistSummary) {
 async function confirmDelete() {
   if (!deleteTarget.value) return
   deleting.value = true
+  const targetName = deleteTarget.value.name
   try {
     await deleteChecklist(deleteTarget.value.id)
     deleteDialog.value = false
     deleteTarget.value = null
     await loadChecklists()
+    showSnackbar(`已刪除「${targetName}」`)
   } catch (err) {
-    errorMessage.value = err instanceof Error ? err.message : '刪除失敗'
+    deleteDialog.value = false
+    deleteTarget.value = null
+    showSnackbar(err instanceof Error ? err.message : '刪除失敗', 'error')
   } finally {
     deleting.value = false
   }

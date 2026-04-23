@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useSnackbar } from '../composables/useSnackbar'
 import { createGauge, deleteGauge, getGauges } from '../services/api'
 import type { Gauge } from '../types'
+
+const { show: showSnackbar } = useSnackbar()
 
 const gauges = ref<Gauge[]>([])
 const loading = ref(false)
@@ -45,10 +48,12 @@ async function loadGauges() {
 async function submitCreate() {
   createError.value = ''
   creating.value = true
+  const createdName = newName.value.trim()
   try {
     await createGauge(newName.value)
     newName.value = ''
     await loadGauges()
+    showSnackbar(`量具「${createdName}」新增成功`)
   } catch (err) {
     createError.value = err instanceof Error ? err.message : '新增量具失敗'
   } finally {
@@ -64,13 +69,17 @@ function askDelete(g: Gauge) {
 async function confirmDelete() {
   if (!deleteTarget.value) return
   deleting.value = true
+  const targetName = deleteTarget.value.name
   try {
     await deleteGauge(deleteTarget.value.id)
     deleteDialog.value = false
     deleteTarget.value = null
     await loadGauges()
+    showSnackbar(`量具「${targetName}」已刪除`)
   } catch (err) {
-    errorMessage.value = err instanceof Error ? err.message : '刪除失敗'
+    deleteDialog.value = false
+    deleteTarget.value = null
+    showSnackbar(err instanceof Error ? err.message : '刪除失敗', 'error')
   } finally {
     deleting.value = false
   }

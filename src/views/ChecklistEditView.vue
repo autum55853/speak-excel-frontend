@@ -2,11 +2,13 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ChecklistTable from '../components/ChecklistTable.vue'
+import { useSnackbar } from '../composables/useSnackbar'
 import { createChecklist, getChecklist, getGauges, updateChecklist } from '../services/api'
 import type { ChecklistRow, Gauge } from '../types'
 
 const route = useRoute()
 const router = useRouter()
+const { show: showSnackbar } = useSnackbar()
 
 const checklistId = computed(() => (typeof route.params.id === 'string' ? route.params.id : null))
 const isEdit = computed(() => checklistId.value !== null)
@@ -84,6 +86,7 @@ async function handleSave() {
       const created = await createChecklist({ name: name.value, rows: rows.value })
       savedId = created.id
     }
+    showSnackbar(isEdit.value ? '已更新檢查表' : '檢查表建立成功')
     router.push({ name: 'checklist-preview', params: { id: savedId } })
   } catch (err) {
     errorMessage.value = err instanceof Error ? err.message : '儲存失敗'

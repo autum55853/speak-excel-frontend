@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import { useDisplay } from 'vuetify'
+import { useSnackbar } from './composables/useSnackbar'
 
 type NavItem = {
   title: string
@@ -11,6 +12,14 @@ type NavItem = {
 
 const { mobile } = useDisplay()
 const drawer = ref(true)
+
+const { visible: snackVisible, message: snackMessage, color: snackColor, show: showSnackbar } = useSnackbar()
+
+function onUnauthorized() {
+  showSnackbar('未授權存取，請重新整理頁面', 'error')
+}
+onMounted(() => window.addEventListener('auth:unauthorized', onUnauthorized))
+onUnmounted(() => window.removeEventListener('auth:unauthorized', onUnauthorized))
 
 const navItems: NavItem[] = [
   { title: '檢查表列表', icon: 'mdi-clipboard-list-outline', to: { name: 'checklist-list' } },
@@ -84,6 +93,17 @@ function toggleDrawer() {
         <RouterView />
       </v-container>
     </v-main>
+    <v-snackbar
+      v-model="snackVisible"
+      :color="snackColor"
+      :timeout="3500"
+      location="bottom right"
+    >
+      {{ snackMessage }}
+      <template #actions>
+        <v-btn variant="text" @click="snackVisible = false">關閉</v-btn>
+      </template>
+    </v-snackbar>
   </v-app>
 </template>
 
