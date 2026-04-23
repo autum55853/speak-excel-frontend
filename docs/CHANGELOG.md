@@ -4,6 +4,32 @@
 
 ---
 
+## 2026-04-23 — Phase 5 後端整合：基礎設施 + api.ts 改寫（Steps 1 & 2）
+
+- 新增 `src/services/apiError.ts`：統一錯誤型別 `ApiError extends Error`，含 `readonly status: number`；以一般欄位宣告取代 parameter property，符合 `erasableSyntaxOnly` TypeScript 編譯選項
+- 新增 `src/services/http.ts`：fetch wrapper
+  - 從 `VITE_API_BASE_URL` 讀取 base URL（缺少時啟動期拋錯）
+  - 10 秒 timeout（AbortController）
+  - 預設 `Content-Type: application/json`
+  - 預留 `getAuthToken()` hook（目前回傳 `undefined`，Phase 6 接入登入後改讀 Pinia store）
+  - 401 → `window.dispatchEvent(new CustomEvent('auth:unauthorized'))`
+  - 204 No Content → 回傳 `undefined as T`
+  - 非 2xx → 解析 `{ error: string }` body → 拋出 `ApiError`；timeout → `ApiError(0, '請求逾時...')`
+- 完整改寫 `src/services/api.ts`（public 函式簽名**不變**）：
+  - 移除全部 localStorage 實作（`readStore` / `writeStore` / UUID 產生）
+  - 新增後端內部型別（`BackendGauge` / `BackendChecklistRow` / `BackendChecklist`，snake_case）
+  - 雙向欄位對應：`created_at` ↔ `createdAt`、`gauge_id` ↔ `gaugeId`、`inspection_item` ↔ `inspectionItem` 等
+  - `gaugeName` 由前端解析：`getChecklist` 和建立 / 更新後 re-fetch 時先取 `fetchGaugeMap()`，再 join gauge ID
+  - `updateChecklist`：後端為 `PUT`（全量替換），若前端只傳部分欄位先 fetch 補齊再送出；PUT 回傳 204，完成後重新 fetch 取得最新資料
+  - `createChecklist`：POST 回傳不含 rows，完成後重新 fetch 取得完整資料
+  - 保留 `sanitizeChecklistName` / `sanitizeGaugeName` 作為前端 pre-flight 驗證
+- `.env`：需手動更新 `VITE_API_BASE_URL=http://localhost:3000/api`（原為 `http://localhost:3000`，缺少 `/api` 路徑前綴；env 檔受 hook 保護，無法透過工具修改）
+- `npm run build`（`vue-tsc -b` + Vite）通過
+
+**待完成（Steps 3–5）**：全域 snackbar / loading 狀態補強、文件更新、端對端手動驗證
+
+---
+
 ## 2026-04-22 — 匯出功能優化（動態 import / CDN 字型 / 列印殘影 / 檔名）
 
 - `src/composables/useExport.ts`：

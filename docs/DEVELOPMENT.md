@@ -51,17 +51,38 @@
 
 ## 環境變數
 
-| 變數名稱            | 用途              | 必要性         | 預設值                            |
-| ------------------- | ----------------- | -------------- | --------------------------------- |
-| `VITE_API_BASE_URL` | 後端 API 基底 URL | Phase 5 後必要 | 無（Phase 5 前使用 localStorage） |
+| 變數名稱              | 用途                   | 必要性 | 開發預設值                      |
+| --------------------- | ---------------------- | ------ | ------------------------------- |
+| `VITE_API_BASE_URL`   | 後端 API 基底 URL      | 必要   | `http://localhost:3000/api`     |
+| `VITE_YATING_API_KEY` | 雅婷語音辨識 API Key   | 選用   | 空字串（使用瀏覽器原生 Speech） |
 
-環境變數放在 `.env`（開發）或 `.env.production`（正式），`.env` 不納入版控（已加入 .gitignore）。
+環境變數放在 `.env`（開發）或 `.env.production`（正式），`.env` 不納入版控（已加入 .gitignore）。  
+參考 `.env.example` 建立本機 `.env`。
 
 在程式碼中讀取：
 
 ```typescript
 const apiBase = import.meta.env.VITE_API_BASE_URL
 ```
+
+## 本機後端啟動（speak-excel-api）
+
+前端整合須搭配後端服務，預設 Port 為 `3000`：
+
+```bash
+# 在後端目錄
+cd ../backend
+npm install
+npm run dev     # Express + Supabase 本地啟動
+```
+
+前端 `.env` 確認：
+
+```
+VITE_API_BASE_URL=http://localhost:3000/api
+```
+
+> 注意：`VITE_API_BASE_URL` 必須包含 `/api` 路徑前綴；若缺少會導致所有 API 請求 404。
 
 ---
 

@@ -105,17 +105,30 @@
 
 ---
 
-## 後端整合（Phase 5）⏳
+## 後端整合（Phase 5）🚧
 
 前端唯一需要變動的是 `src/services/api.ts`：將 localStorage 實作替換為 HTTP fetch 呼叫。
 後端 API 基底 URL 從環境變數 `VITE_API_BASE_URL` 讀取，所有頁面元件無需修改。
 
 詳細實作計劃：[`docs/plans/2026-04-21-phase5-後端整合.md`](./plans/2026-04-21-phase5-後端整合.md)
 
-規劃範圍（摘要）：
+### 已完成（Steps 1 & 2）
 
-- 新增 `src/services/http.ts`（fetch wrapper、base URL、error normalization、auth token 預留 hook、401 custom event）
-- 新增 `src/services/apiError.ts`（統一錯誤型別）
-- `src/services/api.ts` 公開函式簽名不變，內部改為呼叫 `http.ts`；保留 `sanitizeXxxName` 前置驗證
-- 環境變數：`.env.development` 預設 `VITE_API_BASE_URL=http://localhost:3000/api`；部署由 CI / `.env.production` 注入
-- 登入功能不在本階段實作，但在 http 層預留 `Authorization` 注入與 401 事件分派，供 Phase 6 接入
+- ✅ `src/services/apiError.ts` — `ApiError` class（含 `status`、`message`）
+- ✅ `src/services/http.ts` — fetch wrapper（base URL / 10s timeout / error normalization / auth 預留 / 401 event）
+- ✅ `src/services/api.ts` — 完整改寫：移除 localStorage、加入 snake_case↔camelCase mapping、`gaugeName` 前端 join、PUT 全量替換、204 re-fetch
+
+### 待完成
+
+- ⏳ Step 3：檢查各 View loading / error 狀態；`App.vue` 全域 snackbar 訂閱錯誤事件
+- ⏳ Step 4：更新 `DEVELOPMENT.md` 後端啟動說明、`FEATURES.md` / `CHANGELOG.md`
+- ⏳ Step 5：端對端手動驗證（完整 CRUD 流程、離線錯誤訊息）
+
+### 環境變數
+
+| 變數 | 值 |
+|------|-----|
+| `VITE_API_BASE_URL` | `http://localhost:3000/api`（開發） |
+| `VITE_YATING_API_KEY` | 雅婷語音辨識 API Key |
+
+登入功能不在本階段實作，但 http 層已預留 `Authorization` 注入與 401 事件分派，供 Phase 6 接入。

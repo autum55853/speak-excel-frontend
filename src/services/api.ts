@@ -1,44 +1,46 @@
-import { v4 as uuidv4 } from 'uuid'
-import type { Checklist, ChecklistInput, ChecklistSummary, ChecklistUpdate, Gauge } from '../types'
+import { request } from './http'
+import { ApiError } from './apiError'
+import type { Checklist, ChecklistInput, ChecklistSummary, ChecklistUpdate, Gauge, ChecklistRow } from '../types'
 
 /**
  * API Service Layer
  *
- * 目前以 localStorage 模擬後端，Phase 5 將整支替換為呼叫
- * `VITE_API_BASE_URL` 對應的 speak-excel-api（Express + Supabase）。
- * 頁面與元件一律透過此模組存取資料，禁止直接操作 localStorage / fetch。
- *
- * 所有公開函式皆為 async，保持與未來後端呼叫一致的簽名。
+ * 公開函式簽名與 localStorage 版本一致，內部改為呼叫 speak-excel-api。
+ * 後端使用 snake_case；此層負責雙向轉換，讓上層元件無須感知差異。
  */
 
-const STORAGE_KEYS = {
-  checklists: 'checklists',
-  gauges: 'gauges',
-} as const
+// ---------- 後端內部型別（snake_case）----------
+
+interface BackendGauge {
+  id: string
+  name: string
+  created_at: string
+}
+
+interface BackendChecklistRow {
+  id: string
+  checklist_id: string
+  sort_order: number
+  position: string | null
+  gauge_id: string | null
+  inspection_item: string | null
+  remark: string | null
+}
+
+interface BackendChecklist {
+  id: string
+  name: string
+  created_at: string
+  updated_at: string
+  checklist_rows?: BackendChecklistRow[]
+}
+
+// ---------- 前端驗證 ----------
 
 const MAX_NAME_LENGTHS = {
   checklist: 200,
   gauge: 100,
 } as const
-
-function readStore<T>(key: string): T[] {
-  try {
-    const raw = localStorage.getItem(key)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? (parsed as T[]) : []
-  } catch {
-    return []
-  }
-}
-
-function writeStore<T>(key: string, value: T[]): void {
-  localStorage.setItem(key, JSON.stringify(value))
-}
-
-function nowIso(): string {
-  return new Date().toISOString()
-}
 
 function sanitizeChecklistName(name: string): string {
   const trimmed = name.trim()
@@ -58,85 +60,134 @@ function sanitizeGaugeName(name: string): string {
   return trimmed
 }
 
+// ---------- 資料對應：後端 → 前端 ----------
+
+function mapGauge(g: BackendGauge): Gauge {
+  return { id: g.id, name: g.name, createdAt: g.created_at }
+}
+
+function mapRow(r: BackendChecklistRow, gaugeMap: Map<string, string>): ChecklistRow {
+  return {
+    id: r.id,
+    position: r.position ?? '',
+    gaugeId: r.gauge_id ?? '',
+    gaugeName: r.gauge_id ? (gaugeMap.get(r.gauge_id) ?? '') : '',
+    inspectionItem: r.inspection_item ?? '',
+    remark: r.remark ?? '',
+  }
+}
+
+function mapChecklist(c: BackendChecklist, gaugeMap: Map<string, string>): Checklist {
+  return {
+    id: c.id,
+    name: c.name,
+    createdAt: c.created_at,
+    updatedAt: c.updated_at,
+    rows: (c.checklist_rows ?? []).map((r) => mapRow(r, gaugeMap)),
+  }
+}
+
+function mapChecklistSummary(c: BackendChecklist): ChecklistSummary {
+  return { id: c.id, name: c.name, createdAt: c.created_at, updatedAt: c.updated_at }
+}
+
+// ---------- 資料對應：前端 → 後端 ----------
+
+function serializeRows(rows: ChecklistRow[]): object[] {
+  return rows.map((row, idx) => ({
+    sort_order: idx + 1,
+    position: row.position || null,
+    gauge_id: row.gaugeId || null,
+    inspection_item: row.inspectionItem || null,
+    remark: row.remark || null,
+  }))
+}
+
+// ---------- 內部共用 helper ----------
+
+async function fetchGaugeMap(): Promise<Map<string, string>> {
+  const gauges = await request<BackendGauge[]>('/gauges')
+  return new Map(gauges.map((g) => [g.id, g.name]))
+}
+
+async function fetchChecklistById(id: string, gaugeMap: Map<string, string>): Promise<Checklist> {
+  const data = await request<BackendChecklist>(`/checklists/${id}`)
+  return mapChecklist(data, gaugeMap)
+}
+
 // ---------- Checklist ----------
 
 export async function getChecklists(): Promise<ChecklistSummary[]> {
-  return readStore<Checklist>(STORAGE_KEYS.checklists)
-    .map(({ id, name, createdAt, updatedAt }) => ({ id, name, createdAt, updatedAt }))
-    .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
+  const data = await request<BackendChecklist[]>('/checklists')
+  return data.map(mapChecklistSummary)
 }
 
 export async function getChecklist(id: string): Promise<Checklist | null> {
-  return readStore<Checklist>(STORAGE_KEYS.checklists).find((c) => c.id === id) ?? null
+  try {
+    const gaugeMap = await fetchGaugeMap()
+    return await fetchChecklistById(id, gaugeMap)
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return null
+    throw err
+  }
 }
 
 export async function createChecklist(data: ChecklistInput): Promise<Checklist> {
-  const now = nowIso()
-  const checklist: Checklist = {
-    id: uuidv4(),
-    name: sanitizeChecklistName(data.name),
-    rows: data.rows ?? [],
-    createdAt: now,
-    updatedAt: now,
-  }
-  const all = readStore<Checklist>(STORAGE_KEYS.checklists)
-  all.push(checklist)
-  writeStore(STORAGE_KEYS.checklists, all)
-  return checklist
+  const name = sanitizeChecklistName(data.name)
+  const created = await request<BackendChecklist>('/checklists', {
+    method: 'POST',
+    body: JSON.stringify({ name, rows: serializeRows(data.rows ?? []) }),
+  })
+  // POST 回傳不含 rows，重新 fetch 取得完整資料
+  const gaugeMap = await fetchGaugeMap()
+  return fetchChecklistById(created.id, gaugeMap)
 }
 
 export async function updateChecklist(id: string, data: ChecklistUpdate): Promise<Checklist> {
-  const all = readStore<Checklist>(STORAGE_KEYS.checklists)
-  const idx = all.findIndex((c) => c.id === id)
-  if (idx === -1) throw new Error(`找不到檢查表：${id}`)
-  const current = all[idx]
-  const next: Checklist = {
-    ...current,
-    ...(data.name !== undefined ? { name: sanitizeChecklistName(data.name) } : {}),
-    ...(data.rows !== undefined ? { rows: data.rows } : {}),
-    updatedAt: nowIso(),
+  // 後端為 PUT 全量替換，若前端只傳部分欄位，先 fetch 補齊
+  let name: string
+  let rows: ChecklistRow[]
+
+  if (data.name !== undefined && data.rows !== undefined) {
+    name = sanitizeChecklistName(data.name)
+    rows = data.rows
+  } else {
+    const gaugeMap = await fetchGaugeMap()
+    const current = await fetchChecklistById(id, gaugeMap)
+    name = data.name !== undefined ? sanitizeChecklistName(data.name) : current.name
+    rows = data.rows !== undefined ? data.rows : current.rows
   }
-  all[idx] = next
-  writeStore(STORAGE_KEYS.checklists, all)
-  return next
+
+  await request<void>(`/checklists/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ name, rows: serializeRows(rows) }),
+  })
+
+  // PUT 回傳 204，重新 fetch 取得更新後資料
+  const gaugeMap = await fetchGaugeMap()
+  return fetchChecklistById(id, gaugeMap)
 }
 
 export async function deleteChecklist(id: string): Promise<void> {
-  const all = readStore<Checklist>(STORAGE_KEYS.checklists)
-  writeStore(
-    STORAGE_KEYS.checklists,
-    all.filter((c) => c.id !== id),
-  )
+  await request<void>(`/checklists/${id}`, { method: 'DELETE' })
 }
 
 // ---------- Gauge ----------
 
 export async function getGauges(): Promise<Gauge[]> {
-  return readStore<Gauge>(STORAGE_KEYS.gauges).sort((a, b) =>
-    a.name.localeCompare(b.name, 'zh-Hant'),
-  )
+  const data = await request<BackendGauge[]>('/gauges')
+  return data.map(mapGauge)
 }
 
 export async function createGauge(name: string): Promise<Gauge> {
   const cleanName = sanitizeGaugeName(name)
-  const all = readStore<Gauge>(STORAGE_KEYS.gauges)
-  if (all.some((g) => g.name === cleanName)) {
-    throw new Error(`量具「${cleanName}」已存在`)
-  }
-  const gauge: Gauge = {
-    id: uuidv4(),
-    name: cleanName,
-    createdAt: nowIso(),
-  }
-  all.push(gauge)
-  writeStore(STORAGE_KEYS.gauges, all)
-  return gauge
+  const data = await request<BackendGauge>('/gauges', {
+    method: 'POST',
+    body: JSON.stringify({ name: cleanName }),
+  })
+  return mapGauge(data)
 }
 
 export async function deleteGauge(id: string): Promise<void> {
-  const all = readStore<Gauge>(STORAGE_KEYS.gauges)
-  writeStore(
-    STORAGE_KEYS.gauges,
-    all.filter((g) => g.id !== id),
-  )
+  await request<void>(`/gauges/${id}`, { method: 'DELETE' })
 }
