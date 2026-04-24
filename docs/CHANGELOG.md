@@ -4,6 +4,17 @@
 
 ---
 
+## 2026-04-23 — Phase 5 後端整合：全域 snackbar 與 UX 回饋（Step 3）
+
+- 新增 `src/composables/useSnackbar.ts`：module singleton，提供 `show(message, color?)` 供各 View 觸發 snackbar
+- `src/App.vue`：掛載全域 `v-snackbar`（底部居中，3 秒自動關閉），訂閱 `auth:unauthorized` 自訂事件並顯示提示
+- 各 View（`ChecklistListView` / `ChecklistEditView` / `GaugeManageView`）：
+  - 刪除、新增、儲存成功時透過 snackbar 顯示操作回饋
+  - 刪除 dialog 觸發錯誤時改由 snackbar 顯示並自動關閉 dialog（修正原本錯誤被 dialog 遮住的 UX 問題）
+- `npm run build` 通過型別檢查
+
+---
+
 ## 2026-04-23 — Phase 5 後端整合：api.ts 優化（Steps 3–5）
 
 - `src/services/api.ts`：移除 `fetchGaugeMap()` 與 `gaugeMap: Map<string, string>` 機制

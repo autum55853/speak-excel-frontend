@@ -105,24 +105,22 @@
 
 ---
 
-## 後端整合（Phase 5）🚧
+## 後端整合（Phase 5）✅
 
 前端唯一需要變動的是 `src/services/api.ts`：將 localStorage 實作替換為 HTTP fetch 呼叫。
 後端 API 基底 URL 從環境變數 `VITE_API_BASE_URL` 讀取，所有頁面元件無需修改。
 
-詳細實作計劃：[`docs/plans/2026-04-21-phase5-後端整合.md`](./plans/2026-04-21-phase5-後端整合.md)
+詳細實作計劃：[`docs/plans/archive/2026-04-21-phase5-後端整合.md`](./plans/archive/2026-04-21-phase5-後端整合.md)
 
-### 已完成（Steps 1 & 2）
+### 已完成
 
 - ✅ `src/services/apiError.ts` — `ApiError` class（含 `status`、`message`）
 - ✅ `src/services/http.ts` — fetch wrapper（base URL / 10s timeout / error normalization / auth 預留 / 401 event）
-- ✅ `src/services/api.ts` — 完整改寫：移除 localStorage、加入 snake_case↔camelCase mapping、`gaugeName` 前端 join、PUT 全量替換、204 re-fetch
-
-### 待完成
-
-- ⏳ Step 3：檢查各 View loading / error 狀態；`App.vue` 全域 snackbar 訂閱錯誤事件
-- ⏳ Step 4：更新 `DEVELOPMENT.md` 後端啟動說明、`FEATURES.md` / `CHANGELOG.md`
-- ⏳ Step 5：端對端手動驗證（完整 CRUD 流程、離線錯誤訊息）
+- ✅ `src/services/api.ts` — 完整改寫：移除 localStorage、snake_case↔camelCase mapping、`gaugeName` embedded join、PUT 全量替換、204 re-fetch
+- ✅ `src/composables/useSnackbar.ts` — module singleton，供各 View 顯示操作回饋
+- ✅ `App.vue` — 全域 `v-snackbar` 掛載，訂閱 `auth:unauthorized` 事件
+- ✅ 各 View loading / error 狀態完備；刪除 dialog 錯誤改透過 snackbar 顯示
+- ✅ `docs/DEVELOPMENT.md` 補充後端啟動說明與 `VITE_API_BASE_URL` 注意事項
 
 ### 環境變數
 
