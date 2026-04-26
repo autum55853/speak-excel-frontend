@@ -4,6 +4,39 @@
 
 ---
 
+## 2026-04-24 — Excel 模板匯出功能（前後端完整實作）
+
+### 後端（speak-excel-api）
+
+- 安裝 `multer` v2.1.1 + `@types/multer`（memory storage，10 MB 限制，.xlsx fileFilter）
+- 新增 `src/routes/templates.ts`：
+  - `GET /api/templates`：從 `excel_templates` 資料表撈取所有模板元資料
+  - `POST /api/templates`：multipart 上傳 → 先 INSERT 取得 UUID → 以 UUID 為路徑上傳 Storage → Storage 失敗時 rollback DB
+  - `GET /api/templates/:id/file`：從 `excel-templates` Storage 下載 .xlsx 並以 Buffer 回傳
+  - `DELETE /api/templates/:id`：先刪 Storage（忽略 404）→ 再刪資料表
+- `src/app.ts`：掛載 `templatesRouter` 至 `/api/templates`
+- `tsc --noEmit` 型別檢查通過
+
+### 前端（speak-excel/frontend）
+
+- `src/types/index.ts`：新增 `ExcelTemplate` interface（`id`, `name`, `filename`, `dataStartRow`, `createdAt`）
+- `src/services/api.ts`：新增四個 API 函式
+  - `getTemplates()` / `deleteTemplate(id)` → 透過 `http.ts` request wrapper
+  - `uploadTemplate(name, file, dataStartRow)` / `getTemplateFile(id)` → 直接 `fetch`（繞過 Content-Type: application/json，保留 FormData boundary）
+- `src/composables/useExport.ts`：新增 `buildExcelBlobWithTemplate(checklist, template, buffer)` 與 `exportToExcelWithTemplate`
+  - `ExcelJS.Workbook.xlsx.load(templateBuffer)` 載入模板，從 `data_start_row` 以 `getRow(n)` 定址填入，保留版頭
+- `src/components/ExportDialog.vue`：Excel 格式改為兩步驟（format-select → template-select），PDF / 列印不受影響
+- 新增 `src/views/TemplateManageView.vue`：上傳表單（名稱 / 起始列 / 檔案選擇）+ 資料表 + 刪除確認 dialog
+- `src/router/index.ts`：新增 `/templates` 路由（`name: 'templates'`）
+- `src/App.vue`：navItems 新增「模板管理」（`mdi-file-table-outline`）
+
+### 待手動建立（Supabase 控制台）
+
+- `excel_templates` 資料表（`id` UUID PK, `name` varchar(100) unique, `filename`, `data_start_row` int, `created_at`）
+- `excel-templates` Storage private bucket
+
+---
+
 ## 2026-04-23 — Phase 5 後端整合：全域 snackbar 與 UX 回饋（Step 3）
 
 - 新增 `src/composables/useSnackbar.ts`：module singleton，提供 `show(message, color?)` 供各 View 觸發 snackbar

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useExport } from '../composables/useExport'
-import type { Checklist, ExportFormat } from '../types'
+import { getTemplateFile, getTemplates } from '../services/api'
+import type { Checklist, ExcelTemplate, ExportFormat } from '../types'
 
 const props = defineProps<{
   modelValue: boolean
@@ -12,10 +13,22 @@ const emit = defineEmits<{
   'update:modelValue': [value: boolean]
 }>()
 
-const { exportToExcel, exportToPdf, exportToPrint } = useExport()
+const { exportToExcel, exportToExcelWithTemplate, exportToPdf, exportToPrint } = useExport()
 
 const busyFormat = ref<ExportFormat | null>(null)
 const errorMessage = ref('')
+
+const currentStep = ref<'format-select' | 'template-select'>('format-select')
+const templates = ref<ExcelTemplate[]>([])
+const templatesLoading = ref(false)
+const templatesError = ref('')
+const processingTemplateId = ref<string | null>(null)
+
+const dialogTitle = computed(() =>
+  currentStep.value === 'template-select' ? '選擇 Excel 模板' : '選擇匯出格式',
+)
+
+const isBusy = computed(() => busyFormat.value !== null || processingTemplateId.value !== null)
 
 const FORMAT_OPTIONS: Array<{
   value: ExportFormat
@@ -44,25 +57,56 @@ const FORMAT_OPTIONS: Array<{
 ]
 
 function close() {
-  if (busyFormat.value) return
+  if (isBusy.value) return
   emit('update:modelValue', false)
+}
+
+function goBack() {
+  if (isBusy.value) return
+  currentStep.value = 'format-select'
+  errorMessage.value = ''
 }
 
 watch(
   () => props.modelValue,
   (open) => {
-    if (open) errorMessage.value = ''
+    if (open) {
+      errorMessage.value = ''
+      currentStep.value = 'format-select'
+      templates.value = []
+      templatesLoading.value = false
+      templatesError.value = ''
+      processingTemplateId.value = null
+      busyFormat.value = null
+    }
   },
 )
 
-async function handleChoose(format: ExportFormat) {
-  if (!props.checklist || busyFormat.value) return
-  busyFormat.value = format
-  errorMessage.value = ''
+async function loadTemplates() {
+  templatesLoading.value = true
+  templatesError.value = ''
   try {
-    if (format === 'excel') {
-      await exportToExcel(props.checklist)
-    } else if (format === 'pdf') {
+    templates.value = await getTemplates()
+  } catch (err) {
+    templatesError.value = err instanceof Error ? err.message : '無法載入模板清單'
+  } finally {
+    templatesLoading.value = false
+  }
+}
+
+async function handleChoose(format: ExportFormat) {
+  if (!props.checklist || isBusy.value) return
+  errorMessage.value = ''
+
+  if (format === 'excel') {
+    currentStep.value = 'template-select'
+    await loadTemplates()
+    return
+  }
+
+  busyFormat.value = format
+  try {
+    if (format === 'pdf') {
       await exportToPdf(props.checklist)
     } else {
       emit('update:modelValue', false)
@@ -80,19 +124,39 @@ async function handleChoose(format: ExportFormat) {
     busyFormat.value = null
   }
 }
+
+async function handleSelectTemplate(template: ExcelTemplate | null) {
+  if (!props.checklist || processingTemplateId.value !== null) return
+  errorMessage.value = ''
+  processingTemplateId.value = template ? template.id : 'no-template'
+
+  try {
+    if (template) {
+      const buffer = await getTemplateFile(template.id)
+      await exportToExcelWithTemplate(props.checklist, template, buffer)
+    } else {
+      await exportToExcel(props.checklist)
+    }
+    emit('update:modelValue', false)
+  } catch (err) {
+    errorMessage.value = err instanceof Error ? err.message : '匯出失敗'
+  } finally {
+    processingTemplateId.value = null
+  }
+}
 </script>
 
 <template>
   <v-dialog
     :model-value="props.modelValue"
     max-width="480"
-    :persistent="busyFormat !== null"
+    :persistent="isBusy"
     @update:model-value="(v: boolean) => emit('update:modelValue', v)"
   >
     <v-card>
       <v-card-title class="d-flex align-center">
         <v-icon icon="mdi-export" class="mr-2" />
-        選擇匯出格式
+        {{ dialogTitle }}
       </v-card-title>
       <v-card-text>
         <v-alert
@@ -107,7 +171,8 @@ async function handleChoose(format: ExportFormat) {
           {{ errorMessage }}
         </v-alert>
 
-        <v-list lines="two" density="comfortable">
+        <!-- 格式選擇步驟 -->
+        <v-list v-if="currentStep === 'format-select'" lines="two" density="comfortable">
           <v-list-item
             v-for="option in FORMAT_OPTIONS"
             :key="option.value"
@@ -129,10 +194,76 @@ async function handleChoose(format: ExportFormat) {
             </template>
           </v-list-item>
         </v-list>
+
+        <!-- 模板選擇步驟 -->
+        <div v-else>
+          <v-progress-linear v-if="templatesLoading" indeterminate color="primary" class="mb-2" />
+
+          <v-alert
+            v-if="templatesError"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mb-3"
+          >
+            {{ templatesError }}
+          </v-alert>
+
+          <v-list v-if="!templatesLoading" lines="two" density="comfortable">
+            <v-list-item
+              :disabled="processingTemplateId !== null"
+              prepend-icon="mdi-close-circle-outline"
+              title="不使用模板"
+              subtitle="使用預設樣式匯出"
+              @click="handleSelectTemplate(null)"
+            >
+              <template #append>
+                <v-progress-circular
+                  v-if="processingTemplateId === 'no-template'"
+                  indeterminate
+                  size="20"
+                  width="2"
+                  color="primary"
+                />
+                <v-icon v-else icon="mdi-chevron-right" />
+              </template>
+            </v-list-item>
+
+            <v-list-item
+              v-for="t in templates"
+              :key="t.id"
+              :disabled="processingTemplateId !== null"
+              prepend-icon="mdi-file-table-outline"
+              :title="t.name"
+              :subtitle="`資料起始列：第 ${t.dataStartRow} 列`"
+              @click="handleSelectTemplate(t)"
+            >
+              <template #append>
+                <v-progress-circular
+                  v-if="processingTemplateId === t.id"
+                  indeterminate
+                  size="20"
+                  width="2"
+                  color="primary"
+                />
+                <v-icon v-else icon="mdi-chevron-right" />
+              </template>
+            </v-list-item>
+          </v-list>
+        </div>
       </v-card-text>
       <v-card-actions>
+        <v-btn
+          v-if="currentStep === 'template-select'"
+          variant="text"
+          :disabled="isBusy"
+          prepend-icon="mdi-arrow-left"
+          @click="goBack"
+        >
+          返回
+        </v-btn>
         <v-spacer />
-        <v-btn variant="text" :disabled="busyFormat !== null" @click="close">取消</v-btn>
+        <v-btn variant="text" :disabled="isBusy" @click="close">取消</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

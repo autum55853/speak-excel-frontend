@@ -25,6 +25,7 @@ const navItems: NavItem[] = [
   { title: '檢查表列表', icon: 'mdi-clipboard-list-outline', to: { name: 'checklist-list' } },
   { title: '新增檢查表', icon: 'mdi-file-document-plus-outline', to: { name: 'checklist-new' } },
   { title: '量具管理', icon: 'mdi-ruler', to: { name: 'gauges' } },
+  { title: '模板管理', icon: 'mdi-file-table-outline', to: { name: 'templates' } },
 ]
 
 const isSpeechSupported = computed(() => {

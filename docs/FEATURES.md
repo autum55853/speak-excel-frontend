@@ -16,7 +16,7 @@
 - 點擊列 → 導向 `/checklist/:id/preview`
 - 右上角「新增文件」按鈕 → 導向 `/checklist/new`
 - 空資料時顯示 `v-empty-state`（icon + 提示 + 新增按鈕）
-- 左側 `v-navigation-drawer` 統一提供「檢查表列表 / 新增檢查表 / 量具管理」三個路由入口，手機版收合為漢堡按鈕
+- 左側 `v-navigation-drawer` 統一提供「檢查表列表 / 新增檢查表 / 量具管理 / 模板管理」四個路由入口，手機版收合為漢堡按鈕
 
 ### 新增 / 編輯檢查表（ChecklistEditView）✅
 
@@ -84,10 +84,10 @@
 行為描述：
 
 - 於預覽頁按「匯出」開啟 `ExportDialog`，對話框列出三種匯出格式：
-  1. **Excel (.xlsx)**：`exceljs` 產生含標題列、表頭底色、邊框、欄寬、自動換行的試算表
+  1. **Excel (.xlsx)**：選擇後進入模板選擇步驟（見「Excel 模板匯出」章節），可選擇不使用模板或套用已上傳的自訂模板
   2. **PDF**：`jspdf` + `jspdf-autotable` 產生 A4 直式 PDF，含中文字型（Noto Sans TC）
   3. **網頁列印**：呼叫 `window.print()`，透過 `@media print` CSS 隱藏 AppBar / 操作按鈕 / Dialog overlay
-- 選擇後立即觸發對應動作；匯出中列項顯示 `v-progress-circular`，對話框進入 `persistent` 模式避免誤關
+- Excel 以外的格式選擇後立即觸發對應動作；匯出中列項顯示 `v-progress-circular`，對話框進入 `persistent` 模式避免誤關
 - 錯誤訊息以 `v-alert` 顯示於對話框內（例：PDF 字型網路下載失敗）
 - 檔名格式：`<文件名稱>.xlsx` / `<文件名稱>.pdf`，去除檔名非法字元 `\ / : * ? " < > |`
 - 網頁列印「另存為 PDF」時，瀏覽器預設檔名取自 `document.title`（載入預覽頁時自動設為文件名稱）
@@ -102,6 +102,48 @@
 - 字型從 jsDelivr CDN 動態下載 `NotoSansTC_400Regular.ttf`（`@expo-google-fonts/noto-sans-tc@0.4.3`，完整 TTF，約 6.78MB）
 - 以 module scope `cachedFontBase64` 快取，同一 session 僅下載一次；瀏覽器 HTTP 快取後重複使用零延遲
 - 離線或 CDN 不可達時，`ExportDialog` 顯示明確錯誤訊息，引導改用「網頁列印」另存 PDF
+
+---
+
+## 模板管理（TemplateManageView）✅
+
+行為描述：
+
+- 側欄「模板管理」連結 → `/templates`
+- 上傳表單：模板名稱（`maxlength="100"`）、資料起始列（正整數，預設 2）、`v-file-input`（限 .xlsx，10 MB）、上傳按鈕
+  - 上傳中顯示 loading spinner；成功後表格自動更新
+  - 模板名稱重複時顯示 `409` 錯誤提示
+- `v-data-table` 顯示所有模板（欄位：名稱 | 資料起始列 | 建立時間 | 刪除）
+- 刪除須顯示確認對話框（同 GaugeManageView 規範）
+
+---
+
+## Excel 模板匯出✅
+
+行為描述：
+
+- 於預覽頁按「匯出 → Excel」時，`ExportDialog` 切換至「模板選擇」步驟，顯示：
+  - 「不使用模板」→ 執行現有預設匯出
+  - 各已上傳模板（顯示名稱與資料起始列）→ 套用模板匯出
+- 套用模板邏輯（`buildExcelBlobWithTemplate`）：
+  - `ExcelJS.Workbook.xlsx.load(templateBuffer)` 載入模板
+  - 從 `data_start_row` 開始以 `sheet.getRow(n)` 定址填入資料（保留版頭）
+  - 欄位順序：A=序號, B=圖面位置, C=量具, D=檢驗項目, E=備註
+  - 每列加細框線（`eachCell({ includeEmpty: true })`）、文字換行、置頂對齊
+- PDF / 列印格式不顯示模板選擇步驟
+
+### 後端 API（speak-excel-api）
+
+| 路由 | 說明 |
+|------|------|
+| `GET /api/templates` | 回傳所有模板元資料 |
+| `POST /api/templates` | multipart/form-data 上傳（`name`, `dataStartRow`, `file`） |
+| `GET /api/templates/:id/file` | 下載模板原始 .xlsx |
+| `DELETE /api/templates/:id` | 先刪 Storage，再刪資料表 |
+
+**Supabase 結構**：
+- `excel_templates` 資料表（`id` UUID PK, `name`, `filename`, `data_start_row`, `created_at`）
+- `excel-templates` Storage private bucket（.xlsx，最大 10 MB）
 
 ---
 

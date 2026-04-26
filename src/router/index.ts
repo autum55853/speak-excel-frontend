@@ -40,6 +40,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/GaugeManageView.vue'),
   },
   {
+    path: '/templates',
+    name: 'templates',
+    component: () => import('../views/TemplateManageView.vue'),
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: notFound,

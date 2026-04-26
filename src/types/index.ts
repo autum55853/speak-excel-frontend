@@ -38,3 +38,11 @@ export type ChecklistInput = Omit<Checklist, 'id' | 'createdAt' | 'updatedAt'>
 export type ChecklistUpdate = Partial<Pick<Checklist, 'name' | 'rows'>>
 
 export type ExportFormat = 'excel' | 'pdf' | 'print'
+
+export interface ExcelTemplate {
+  id: string
+  name: string
+  filename: string
+  dataStartRow: number
+  createdAt: string
+}

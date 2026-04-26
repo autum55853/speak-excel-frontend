@@ -156,6 +156,7 @@ async function submitCreateGauge() {
             <SpeechInputField
               :model-value="row.inspectionItem"
               density="compact"
+              label="語音輸入(點選右側麥克風)"
               @update:model-value="(v: string) => updateField(index, 'inspectionItem', v)"
             />
           </td>
@@ -163,6 +164,7 @@ async function submitCreateGauge() {
             <SpeechInputField
               :model-value="row.remark"
               density="compact"
+              label="語音輸入(點選右側麥克風)"
               @update:model-value="(v: string) => updateField(index, 'remark', v)"
             />
           </td>

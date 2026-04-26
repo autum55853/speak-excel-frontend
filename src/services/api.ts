@@ -1,6 +1,8 @@
 import { request } from './http'
 import { ApiError } from './apiError'
-import type { Checklist, ChecklistInput, ChecklistSummary, ChecklistUpdate, Gauge, ChecklistRow } from '../types'
+import type { Checklist, ChecklistInput, ChecklistSummary, ChecklistUpdate, ExcelTemplate, Gauge, ChecklistRow } from '../types'
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string
 
 /**
  * API Service Layer
@@ -10,6 +12,14 @@ import type { Checklist, ChecklistInput, ChecklistSummary, ChecklistUpdate, Gaug
  */
 
 // ---------- 後端內部型別（snake_case）----------
+
+interface BackendExcelTemplate {
+  id: string
+  name: string
+  filename: string
+  data_start_row: number
+  created_at: string
+}
 
 interface BackendGauge {
   id: string
@@ -41,6 +51,7 @@ interface BackendChecklist {
 const MAX_NAME_LENGTHS = {
   checklist: 200,
   gauge: 100,
+  template: 100,
 } as const
 
 function sanitizeChecklistName(name: string): string {
@@ -61,7 +72,26 @@ function sanitizeGaugeName(name: string): string {
   return trimmed
 }
 
+function sanitizeTemplateName(name: string): string {
+  const trimmed = name.trim()
+  if (!trimmed) throw new Error('模板名稱不可為空')
+  if (trimmed.length > MAX_NAME_LENGTHS.template) {
+    throw new Error(`模板名稱不可超過 ${MAX_NAME_LENGTHS.template} 字元`)
+  }
+  return trimmed
+}
+
 // ---------- 資料對應：後端 → 前端 ----------
+
+function mapTemplate(t: BackendExcelTemplate): ExcelTemplate {
+  return {
+    id: t.id,
+    name: t.name,
+    filename: t.filename,
+    dataStartRow: t.data_start_row,
+    createdAt: t.created_at,
+  }
+}
 
 function mapGauge(g: BackendGauge): Gauge {
   return { id: g.id, name: g.name, createdAt: g.created_at }
@@ -179,4 +209,55 @@ export async function createGauge(name: string): Promise<Gauge> {
 
 export async function deleteGauge(id: string): Promise<void> {
   await request<void>(`/gauges/${id}`, { method: 'DELETE' })
+}
+
+// ---------- ExcelTemplate ----------
+
+export async function getTemplates(): Promise<ExcelTemplate[]> {
+  const data = await request<BackendExcelTemplate[]>('/templates')
+  return data.map(mapTemplate)
+}
+
+export async function uploadTemplate(
+  name: string,
+  file: File,
+  dataStartRow: number,
+): Promise<ExcelTemplate> {
+  const cleanName = sanitizeTemplateName(name)
+  if (!Number.isInteger(dataStartRow) || dataStartRow < 1 || dataStartRow > 1000) {
+    throw new Error('資料起始列必須為 1 到 1000 之間的整數')
+  }
+
+  const formData = new FormData()
+  formData.append('name', cleanName)
+  formData.append('data_start_row', String(dataStartRow))
+  formData.append('file', file)
+
+  const res = await fetch(`${API_BASE_URL}/templates`, {
+    method: 'POST',
+    body: formData,
+  })
+
+  if (!res.ok) {
+    const json = await res.json().catch(() => ({})) as { error?: string }
+    throw new ApiError(res.status, json?.error ?? `HTTP ${res.status}`)
+  }
+
+  const data = (await res.json()) as BackendExcelTemplate
+  return mapTemplate(data)
+}
+
+export async function deleteTemplate(id: string): Promise<void> {
+  await request<void>(`/templates/${id}`, { method: 'DELETE' })
+}
+
+export async function getTemplateFile(id: string): Promise<ArrayBuffer> {
+  const res = await fetch(`${API_BASE_URL}/templates/${id}/file`)
+
+  if (!res.ok) {
+    const json = await res.json().catch(() => ({})) as { error?: string }
+    throw new ApiError(res.status, json?.error ?? `HTTP ${res.status}`)
+  }
+
+  return res.arrayBuffer()
 }

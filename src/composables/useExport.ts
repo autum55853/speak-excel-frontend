@@ -1,5 +1,5 @@
 import type { jsPDF } from 'jspdf'
-import type { Checklist, ChecklistRow } from '../types'
+import type { Checklist, ChecklistRow, ExcelTemplate } from '../types'
 
 /**
  * 匯出 composable
@@ -142,6 +142,44 @@ async function buildExcelBlob(checklist: Checklist): Promise<Blob> {
   })
 }
 
+async function buildExcelBlobWithTemplate(
+  checklist: Checklist,
+  template: ExcelTemplate,
+  templateBuffer: ArrayBuffer,
+): Promise<Blob> {
+  const { default: ExcelJS } = await import('exceljs')
+  const workbook = new ExcelJS.Workbook()
+  await workbook.xlsx.load(templateBuffer)
+
+  const sheet = workbook.worksheets[0]
+  if (!sheet) throw new Error('模板檔案中沒有工作表')
+
+  checklist.rows.forEach((row, index) => {
+    const excelRow = sheet.getRow(template.dataStartRow + index)
+    excelRow.getCell(1).value = index + 1
+    excelRow.getCell(2).value = row.position
+    excelRow.getCell(3).value = formatGauge(row)
+    excelRow.getCell(4).value = row.inspectionItem
+    excelRow.getCell(5).value = row.remark
+    excelRow.alignment = { vertical: 'top', wrapText: true }
+    excelRow.getCell(1).alignment = { horizontal: 'center', vertical: 'top' }
+    excelRow.eachCell({ includeEmpty: true }, (cell) => {
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      }
+    })
+    excelRow.commit()
+  })
+
+  const buffer = await workbook.xlsx.writeBuffer()
+  return new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  })
+}
+
 async function buildPdfDoc(checklist: Checklist): Promise<jsPDF> {
   const [{ jsPDF: JsPDF }, { autoTable }, fontBase64] = await Promise.all([
     import('jspdf'),
@@ -210,5 +248,14 @@ export function useExport() {
     window.print()
   }
 
-  return { exportToExcel, exportToPdf, exportToPrint }
+  async function exportToExcelWithTemplate(
+    checklist: Checklist,
+    template: ExcelTemplate,
+    buffer: ArrayBuffer,
+  ): Promise<void> {
+    const blob = await buildExcelBlobWithTemplate(checklist, template, buffer)
+    triggerDownload(blob, `${sanitizeFilename(checklist.name)}.xlsx`)
+  }
+
+  return { exportToExcel, exportToExcelWithTemplate, exportToPdf, exportToPrint }
 }
