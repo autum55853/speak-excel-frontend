@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useExport } from '../composables/useExport'
+import { printTemplateData, useExport } from '../composables/useExport'
 import { getTemplateFile, getTemplates } from '../services/api'
 import type { Checklist, ExcelTemplate, ExportFormat } from '../types'
 
@@ -13,22 +13,32 @@ const emit = defineEmits<{
   'update:modelValue': [value: boolean]
 }>()
 
-const { exportToExcel, exportToExcelWithTemplate, exportToPdf, exportToPrint } = useExport()
+const {
+  exportToExcel,
+  exportToExcelWithTemplate,
+  exportToPdf,
+  exportToPdfWithTemplate,
+  exportToPrint,
+  buildFilledTemplateData,
+} = useExport()
 
-const busyFormat = ref<ExportFormat | null>(null)
 const errorMessage = ref('')
 
 const currentStep = ref<'format-select' | 'template-select'>('format-select')
+const selectedFormat = ref<ExportFormat | null>(null)
 const templates = ref<ExcelTemplate[]>([])
 const templatesLoading = ref(false)
 const templatesError = ref('')
 const processingTemplateId = ref<string | null>(null)
 
-const dialogTitle = computed(() =>
-  currentStep.value === 'template-select' ? '選擇 Excel 模板' : '選擇匯出格式',
-)
+const dialogTitle = computed(() => {
+  if (currentStep.value !== 'template-select') return '選擇匯出格式'
+  if (selectedFormat.value === 'pdf') return '選擇 PDF 模板'
+  if (selectedFormat.value === 'print') return '選擇列印模板'
+  return '選擇 Excel 模板'
+})
 
-const isBusy = computed(() => busyFormat.value !== null || processingTemplateId.value !== null)
+const isBusy = computed(() => processingTemplateId.value !== null)
 
 const FORMAT_OPTIONS: Array<{
   value: ExportFormat
@@ -73,11 +83,11 @@ watch(
     if (open) {
       errorMessage.value = ''
       currentStep.value = 'format-select'
+      selectedFormat.value = null
       templates.value = []
       templatesLoading.value = false
       templatesError.value = ''
       processingTemplateId.value = null
-      busyFormat.value = null
     }
   },
 )
@@ -97,45 +107,59 @@ async function loadTemplates() {
 async function handleChoose(format: ExportFormat) {
   if (!props.checklist || isBusy.value) return
   errorMessage.value = ''
-
-  if (format === 'excel') {
-    currentStep.value = 'template-select'
-    await loadTemplates()
-    return
-  }
-
-  busyFormat.value = format
-  try {
-    if (format === 'pdf') {
-      await exportToPdf(props.checklist)
-    } else {
-      emit('update:modelValue', false)
-      busyFormat.value = null
-      // Vuetify v-dialog 淡出動畫約 225ms；等 300ms 確保 DOM 完全離場，
-      // 再搭配 App.vue 的 @media print 隱藏 .v-overlay-container 雙重保險
-      await new Promise((resolve) => setTimeout(resolve, 300))
-      exportToPrint()
-      return
-    }
-    emit('update:modelValue', false)
-  } catch (err) {
-    errorMessage.value = err instanceof Error ? err.message : '匯出失敗'
-  } finally {
-    busyFormat.value = null
-  }
+  selectedFormat.value = format
+  currentStep.value = 'template-select'
+  await loadTemplates()
 }
 
 async function handleSelectTemplate(template: ExcelTemplate | null) {
   if (!props.checklist || processingTemplateId.value !== null) return
   errorMessage.value = ''
   processingTemplateId.value = template ? template.id : 'no-template'
+  const format = selectedFormat.value
 
+  // 列印特殊流程：建立模板資料 → close dialog → wait 300ms → print → cleanup
+  if (format === 'print') {
+    try {
+      if (template) {
+        const buffer = await getTemplateFile(template.id)
+        printTemplateData.value = await buildFilledTemplateData(props.checklist, template, buffer)
+      } else {
+        printTemplateData.value = null
+      }
+    } catch (err) {
+      errorMessage.value = err instanceof Error ? err.message : '匯出失敗'
+      processingTemplateId.value = null
+      return
+    }
+    emit('update:modelValue', false)
+    processingTemplateId.value = null
+    // Vuetify v-dialog 淡出動畫約 225ms；等 300ms 確保 DOM 完全離場
+    try {
+      await new Promise<void>((resolve) => setTimeout(resolve, 300))
+      exportToPrint()
+    } finally {
+      printTemplateData.value = null
+    }
+    return
+  }
+
+  // Excel / PDF 標準流程
   try {
-    if (template) {
-      const buffer = await getTemplateFile(template.id)
-      await exportToExcelWithTemplate(props.checklist, template, buffer)
-    } else {
-      await exportToExcel(props.checklist)
+    if (format === 'excel') {
+      if (template) {
+        const buffer = await getTemplateFile(template.id)
+        await exportToExcelWithTemplate(props.checklist, template, buffer)
+      } else {
+        await exportToExcel(props.checklist)
+      }
+    } else if (format === 'pdf') {
+      if (template) {
+        const buffer = await getTemplateFile(template.id)
+        await exportToPdfWithTemplate(props.checklist, template, buffer)
+      } else {
+        await exportToPdf(props.checklist)
+      }
     }
     emit('update:modelValue', false)
   } catch (err) {
@@ -176,21 +200,13 @@ async function handleSelectTemplate(template: ExcelTemplate | null) {
           <v-list-item
             v-for="option in FORMAT_OPTIONS"
             :key="option.value"
-            :disabled="busyFormat !== null && busyFormat !== option.value"
             :prepend-icon="option.icon"
             :title="option.title"
             :subtitle="option.subtitle"
             @click="handleChoose(option.value)"
           >
             <template #append>
-              <v-progress-circular
-                v-if="busyFormat === option.value"
-                indeterminate
-                size="20"
-                width="2"
-                color="primary"
-              />
-              <v-icon v-else icon="mdi-chevron-right" />
+              <v-icon icon="mdi-chevron-right" />
             </template>
           </v-list-item>
         </v-list>

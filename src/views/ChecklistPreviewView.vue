@@ -2,8 +2,9 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ExportDialog from '../components/ExportDialog.vue'
+import { printTemplateData } from '../composables/useExport'
 import { getChecklist } from '../services/api'
-import type { Checklist } from '../types'
+import type { Checklist, PrintTemplateCell } from '../types'
 
 const route = useRoute()
 const router = useRouter()
@@ -14,6 +15,13 @@ const checklist = ref<Checklist | null>(null)
 const loading = ref(false)
 const errorMessage = ref('')
 const showExportDialog = ref(false)
+
+const colWidthPercents = computed(() => {
+  const widths = printTemplateData.value?.colWidths ?? []
+  if (!widths.length) return []
+  const total = widths.reduce((s, w) => s + w, 0)
+  return widths.map(w => Math.round((w / total) * 100))
+})
 
 function formatDateTime(iso: string): string {
   const d = new Date(iso)
@@ -57,6 +65,19 @@ function goBack() {
 function handleExport() {
   if (!checklist.value) return
   showExportDialog.value = true
+}
+
+function getCellStyle(cell: PrintTemplateCell): Record<string, string> {
+  const style: Record<string, string> = {
+    fontWeight: cell.isBold ? 'bold' : 'normal',
+    fontSize: `${cell.fontSize}pt`,
+    textAlign: cell.textAlign,
+    verticalAlign: cell.verticalAlign,
+    padding: '2pt 4pt',
+  }
+  if (cell.backgroundColor) style.backgroundColor = cell.backgroundColor
+  if (cell.hasBorder) style.border = '1px solid #000'
+  return style
 }
 
 onMounted(load)
@@ -108,7 +129,39 @@ onUnmounted(() => {
       <v-progress-circular indeterminate color="primary" />
     </v-card>
 
-    <v-card v-else-if="checklist" class="pa-6 checklist-preview">
+    <!-- 列印模板表格：螢幕隱藏，@media print 才顯示 -->
+    <div v-if="printTemplateData" class="print-excel-wrapper">
+      <table class="print-excel-table">
+        <colgroup>
+          <col
+            v-for="(w, i) in colWidthPercents"
+            :key="i"
+            :style="{ width: w + '%' }"
+          />
+        </colgroup>
+        <tbody>
+          <tr
+            v-for="(row, rIdx) in printTemplateData.rows"
+            :key="rIdx"
+            :style="{ height: row.height + 'pt' }"
+          >
+            <td
+              v-for="(cell, cIdx) in row.cells"
+              :key="cIdx"
+              :colspan="cell.colspan > 1 ? cell.colspan : undefined"
+              :rowspan="cell.rowspan > 1 ? cell.rowspan : undefined"
+              :style="getCellStyle(cell)"
+            >{{ cell.value }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <v-card
+      v-if="!loading && checklist"
+      class="pa-6 checklist-preview"
+      :class="{ 'hide-on-print': !!printTemplateData }"
+    >
       <v-row align="end" class="mb-4" dense>
         <v-col cols="12" md="8">
           <div class="text-caption text-medium-emphasis">文件名稱</div>
@@ -181,6 +234,16 @@ onUnmounted(() => {
   margin: 0;
 }
 
+/* 模板表格：螢幕隱藏、列印顯示 */
+.print-excel-wrapper {
+  display: none;
+}
+.print-excel-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: sans-serif;
+}
+
 @media print {
   .no-print {
     display: none !important;
@@ -188,6 +251,12 @@ onUnmounted(() => {
   .checklist-preview {
     box-shadow: none !important;
     padding: 0 !important;
+  }
+  .print-excel-wrapper {
+    display: block;
+  }
+  .hide-on-print {
+    display: none !important;
   }
 }
 </style>

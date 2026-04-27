@@ -1,5 +1,13 @@
+import { ref } from 'vue'
 import type { jsPDF } from 'jspdf'
-import type { Checklist, ChecklistRow, ExcelTemplate } from '../types'
+import type {
+  Checklist,
+  ChecklistRow,
+  ExcelTemplate,
+  PrintTemplateCell,
+  PrintTemplateData,
+  PrintTemplateRow,
+} from '../types'
 
 /**
  * 匯出 composable
@@ -25,6 +33,9 @@ const EXCEL_SHEET_NAME_MAX = 31 // Excel 規格限制
 const TABLE_HEADERS = ['#', '圖面位置', '量具', '檢驗項目', '備註'] as const
 
 let cachedFontBase64: string | null = null
+
+// 模組層級 singleton：列印時由 ExportDialog 寫入，ChecklistPreviewView 讀取並在 @media print 渲染模板表格
+export const printTemplateData = ref<PrintTemplateData | null>(null)
 
 function sanitizeFilename(name: string): string {
   const cleaned = name.replace(/[\\/:*?"<>|]/g, '_').trim()
@@ -180,7 +191,160 @@ async function buildExcelBlobWithTemplate(
   })
 }
 
-async function buildPdfDoc(checklist: Checklist): Promise<jsPDF> {
+async function buildFilledTemplateData(
+  checklist: Checklist,
+  template: ExcelTemplate,
+  templateBuffer: ArrayBuffer,
+): Promise<PrintTemplateData> {
+  const { default: ExcelJS } = await import('exceljs')
+  const workbook = new ExcelJS.Workbook()
+  await workbook.xlsx.load(templateBuffer)
+
+  const sheet = workbook.worksheets[0]
+  if (!sheet) return { rows: [], colWidths: [] }
+
+  // 填入檢查表資料列（同 buildExcelBlobWithTemplate 邏輯）
+  checklist.rows.forEach((row, index) => {
+    const excelRow = sheet.getRow(template.dataStartRow + index)
+    excelRow.getCell(1).value = index + 1
+    excelRow.getCell(2).value = row.position
+    excelRow.getCell(3).value = formatGauge(row)
+    excelRow.getCell(4).value = row.inspectionItem
+    excelRow.getCell(5).value = row.remark
+    excelRow.commit()
+  })
+
+  // 提取欄寬（共 5 欄）
+  const colWidths: number[] = []
+  for (let c = 1; c <= 5; c++) {
+    colWidths.push(sheet.getColumn(c).width ?? 10)
+  }
+
+  // 逐列逐格提取樣式資訊
+  const templateRows: PrintTemplateRow[] = []
+  const lastRowNum = sheet.lastRow?.number ?? 0
+
+  for (let rowNum = 1; rowNum <= lastRowNum; rowNum++) {
+    const row = sheet.getRow(rowNum)
+    const cells: PrintTemplateCell[] = []
+
+    for (let colNum = 1; colNum <= 5; colNum++) {
+      const cell = row.getCell(colNum)
+
+      // 跳過合併範圍的 slave cell
+      if (cell.isMerged && cell.master.address !== cell.address) continue
+
+      // 計算 colspan（向右掃描）
+      let colspan = 1
+      for (let c = colNum + 1; c <= 5; c++) {
+        const nextCell = row.getCell(c)
+        if (nextCell.isMerged && nextCell.master.address === cell.address) {
+          colspan++
+        } else {
+          break
+        }
+      }
+
+      // 計算 rowspan（向下掃描）
+      let rowspan = 1
+      for (let r = rowNum + 1; r <= lastRowNum; r++) {
+        const cellBelow = sheet.getRow(r).getCell(colNum)
+        if (cellBelow.isMerged && cellBelow.master.address === cell.address) {
+          rowspan++
+        } else {
+          break
+        }
+      }
+
+      // ARGB → #RRGGBB；白色（FFFFFF）回傳 null 避免覆蓋瀏覽器預設
+      const fill = cell.fill as { type?: string; fgColor?: { argb?: string } } | undefined
+      let backgroundColor: string | null = null
+      if (fill?.type === 'pattern' && fill.fgColor?.argb) {
+        const argb = fill.fgColor.argb
+        if (argb.length >= 8) {
+          const rgb = argb.slice(2).toUpperCase()
+          if (rgb !== 'FFFFFF') backgroundColor = `#${rgb}`
+        }
+      }
+
+      const hasBorder = !!(
+        cell.border?.top?.style ||
+        cell.border?.left?.style ||
+        cell.border?.bottom?.style ||
+        cell.border?.right?.style
+      )
+
+      cells.push({
+        value: cell.text ?? '',
+        colspan,
+        rowspan,
+        isBold: cell.font?.bold ?? false,
+        fontSize: cell.font?.size ?? 11,
+        textAlign: (cell.alignment?.horizontal as string) ?? 'left',
+        verticalAlign: cell.alignment?.vertical === 'middle' ? 'middle' : 'top',
+        backgroundColor,
+        hasBorder,
+      })
+    }
+
+    templateRows.push({
+      cells,
+      height: row.height ?? 15,
+    })
+  }
+
+  return { rows: templateRows, colWidths }
+}
+
+async function extractTemplateSections(
+  template: ExcelTemplate,
+  buffer: ArrayBuffer,
+): Promise<{ infoLines: string[]; columnHeaders: string[] }> {
+  if (template.dataStartRow <= 1) {
+    return { infoLines: [], columnHeaders: TABLE_HEADERS as unknown as string[] }
+  }
+
+  const { default: ExcelJS } = await import('exceljs')
+  const workbook = new ExcelJS.Workbook()
+  await workbook.xlsx.load(buffer)
+  const sheet = workbook.worksheets[0]
+  if (!sheet) return { infoLines: [], columnHeaders: TABLE_HEADERS as unknown as string[] }
+
+  // row 1 ~ dataStartRow-2：公司資訊列
+  const infoLines: string[] = []
+  for (let rowNum = 1; rowNum <= template.dataStartRow - 2; rowNum++) {
+    const row = sheet.getRow(rowNum)
+    const texts: string[] = []
+    row.eachCell({ includeEmpty: false }, (cell) => {
+      if (cell.isMerged && cell.master.address !== cell.address) return
+      const text = (cell.text ?? '').trim()
+      if (text) texts.push(text)
+    })
+    if (texts.length > 0) infoLines.push(texts.join('  '))
+  }
+
+  // row dataStartRow-1：欄位標題列
+  const columnHeaders: string[] = []
+  const headerRowNum = template.dataStartRow - 1
+  if (headerRowNum >= 1) {
+    const headerRow = sheet.getRow(headerRowNum)
+    headerRow.eachCell({ includeEmpty: false }, (cell) => {
+      if (cell.isMerged && cell.master.address !== cell.address) return
+      columnHeaders.push((cell.text ?? '').trim())
+    })
+  }
+
+  return {
+    infoLines,
+    columnHeaders: columnHeaders.length > 0 ? columnHeaders : (TABLE_HEADERS as unknown as string[]),
+  }
+}
+
+async function buildPdfDoc(
+  checklist: Checklist,
+  headerLines?: string[],
+  columnHeaders?: string[],
+): Promise<jsPDF> {
   const [{ jsPDF: JsPDF }, { autoTable }, fontBase64] = await Promise.all([
     import('jspdf'),
     import('jspdf-autotable'),
@@ -193,12 +357,28 @@ async function buildPdfDoc(checklist: Checklist): Promise<jsPDF> {
   doc.setFont(PDF_FONT_NAME, 'normal')
 
   const pageWidth = doc.internal.pageSize.getWidth()
+
+  let titleY = 42
+  let tableStartY = 60
+
+  if (headerLines && headerLines.length > 0) {
+    doc.setFontSize(10)
+    let y = 20
+    for (const line of headerLines) {
+      y += 14
+      doc.text(line, 32, y)
+    }
+    y += 12
+    titleY = y + 16
+    tableStartY = titleY + 18
+  }
+
   doc.setFontSize(16)
-  doc.text(checklist.name, pageWidth / 2, 42, { align: 'center' })
+  doc.text(checklist.name, pageWidth / 2, titleY, { align: 'center' })
 
   autoTable(doc, {
-    startY: 60,
-    head: [TABLE_HEADERS as unknown as string[]],
+    startY: tableStartY,
+    head: [columnHeaders ?? (TABLE_HEADERS as unknown as string[])],
     body: checklist.rows.map((row, index) => [
       String(index + 1),
       row.position,
@@ -257,5 +437,23 @@ export function useExport() {
     triggerDownload(blob, `${sanitizeFilename(checklist.name)}.xlsx`)
   }
 
-  return { exportToExcel, exportToExcelWithTemplate, exportToPdf, exportToPrint }
+  async function exportToPdfWithTemplate(
+    checklist: Checklist,
+    template: ExcelTemplate,
+    buffer: ArrayBuffer,
+  ): Promise<void> {
+    const { infoLines, columnHeaders } = await extractTemplateSections(template, buffer)
+    const doc = await buildPdfDoc(checklist, infoLines, columnHeaders)
+    doc.save(`${sanitizeFilename(checklist.name)}.pdf`)
+  }
+
+  return {
+    exportToExcel,
+    exportToExcelWithTemplate,
+    exportToPdf,
+    exportToPdfWithTemplate,
+    exportToPrint,
+    buildFilledTemplateData,
+    extractTemplateSections,
+  }
 }

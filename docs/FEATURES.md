@@ -84,10 +84,11 @@
 行為描述：
 
 - 於預覽頁按「匯出」開啟 `ExportDialog`，對話框列出三種匯出格式：
-  1. **Excel (.xlsx)**：選擇後進入模板選擇步驟（見「Excel 模板匯出」章節），可選擇不使用模板或套用已上傳的自訂模板
-  2. **PDF**：`jspdf` + `jspdf-autotable` 產生 A4 直式 PDF，含中文字型（Noto Sans TC）
-  3. **網頁列印**：呼叫 `window.print()`，透過 `@media print` CSS 隱藏 AppBar / 操作按鈕 / Dialog overlay
-- Excel 以外的格式選擇後立即觸發對應動作；匯出中列項顯示 `v-progress-circular`，對話框進入 `persistent` 模式避免誤關
+  1. **Excel (.xlsx)**：進入模板選擇步驟，可選擇不使用模板或套用已上傳的自訂模板
+  2. **PDF**：進入模板選擇步驟；無模板 → `jspdf` + `jspdf-autotable` 預設版面；有模板 → 套用模板公司資訊與欄位標題（Noto Sans TC 中文字型）
+  3. **網頁列印**：進入模板選擇步驟；無模板 → `window.print()` 列印現有預覽頁；有模板 → 以 HTML `<table>` 完整重現 Excel 模板版面（公司表頭、欄位標題、資料列、頁尾），僅在 `@media print` 顯示
+- 三種格式皆統一進入模板選擇步驟（對話框標題依格式顯示「選擇 Excel / PDF / 列印模板」）
+- 匯出中列項顯示 `v-progress-circular`，對話框進入 `persistent` 模式避免誤關
 - 錯誤訊息以 `v-alert` 顯示於對話框內（例：PDF 字型網路下載失敗）
 - 檔名格式：`<文件名稱>.xlsx` / `<文件名稱>.pdf`，去除檔名非法字元 `\ / : * ? " < > |`
 - 網頁列印「另存為 PDF」時，瀏覽器預設檔名取自 `document.title`（載入預覽頁時自動設為文件名稱）
@@ -118,19 +119,35 @@
 
 ---
 
-## Excel 模板匯出✅
+## 模板匯出（Excel / PDF / 列印）🚧
 
 行為描述：
 
-- 於預覽頁按「匯出 → Excel」時，`ExportDialog` 切換至「模板選擇」步驟，顯示：
-  - 「不使用模板」→ 執行現有預設匯出
+- 所有格式選擇後統一進入「模板選擇」步驟，顯示：
+  - 「不使用模板」→ 執行對應格式的預設匯出
   - 各已上傳模板（顯示名稱與資料起始列）→ 套用模板匯出
-- 套用模板邏輯（`buildExcelBlobWithTemplate`）：
-  - `ExcelJS.Workbook.xlsx.load(templateBuffer)` 載入模板
-  - 從 `data_start_row` 開始以 `sheet.getRow(n)` 定址填入資料（保留版頭）
-  - 欄位順序：A=序號, B=圖面位置, C=量具, D=檢驗項目, E=備註
-  - 每列加細框線（`eachCell({ includeEmpty: true })`）、文字換行、置頂對齊
-- PDF / 列印格式不顯示模板選擇步驟
+
+### Excel 模板套用（`buildExcelBlobWithTemplate`）✅
+
+- `ExcelJS.Workbook.xlsx.load(templateBuffer)` 載入模板
+- 從 `data_start_row` 開始以 `sheet.getRow(n)` 定址填入資料（保留版頭格式）
+- 欄位順序：A=序號, B=圖面位置, C=量具, D=檢驗項目, E=備註
+- 每列加細框線（`eachCell({ includeEmpty: true })`）、文字換行、置頂對齊
+
+### PDF 模板套用（`exportToPdfWithTemplate`）✅
+
+- `extractTemplateSections` 提取公司資訊列（row 1 ~ `dataStartRow-2`）→ 顯示於 PDF 標題上方
+- 讀取模板欄位標題列（`dataStartRow-1`）→ 替換 autotable 預設欄位標題
+- 無模板時保持原版面（`TABLE_HEADERS`，title y=42）
+
+### 列印模板套用（`buildFilledTemplateData` + HTML table）🚧
+
+- `buildFilledTemplateData`：ExcelJS 載入模板 → 填入資料 → 逐列逐格提取 `PrintTemplateData`
+  - 每格提取：值、colspan/rowspan（master/slave 偵測）、font bold/size、alignment、背景色（ARGB → #RGB）、border 有無
+  - 欄寬：`sheet.getColumn(c).width` 轉為百分比
+- `ChecklistPreviewView` 於 `@media print` 渲染 HTML `<table>`，螢幕上隱藏
+- 套用模板時列印一般預覽卡（`hide-on-print` class）隱藏，改顯示模板表格
+- 列印完成後（`try/finally`）清除 `printTemplateData`，DOM 還原
 
 ### 後端 API（speak-excel-api）
 

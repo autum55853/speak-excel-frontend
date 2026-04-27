@@ -46,3 +46,25 @@ export interface ExcelTemplate {
   dataStartRow: number
   createdAt: string
 }
+
+export interface PrintTemplateCell {
+  value: string
+  colspan: number
+  rowspan: number
+  isBold: boolean
+  fontSize: number
+  textAlign: string
+  verticalAlign: string
+  backgroundColor: string | null
+  hasBorder: boolean
+}
+
+export interface PrintTemplateRow {
+  cells: PrintTemplateCell[]
+  height: number
+}
+
+export interface PrintTemplateData {
+  rows: PrintTemplateRow[]
+  colWidths: number[]
+}
