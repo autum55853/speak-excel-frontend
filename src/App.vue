@@ -13,7 +13,12 @@ type NavItem = {
 const { mobile } = useDisplay()
 const drawer = ref(true)
 
-const { visible: snackVisible, message: snackMessage, color: snackColor, show: showSnackbar } = useSnackbar()
+const {
+  visible: snackVisible,
+  message: snackMessage,
+  color: snackColor,
+  show: showSnackbar,
+} = useSnackbar()
 
 function onUnauthorized() {
   showSnackbar('未授權存取，請重新整理頁面', 'error')
@@ -25,7 +30,7 @@ const navItems: NavItem[] = [
   { title: '檢查表列表', icon: 'mdi-clipboard-list-outline', to: { name: 'checklist-list' } },
   { title: '新增檢查表', icon: 'mdi-file-document-plus-outline', to: { name: 'checklist-new' } },
   { title: '量具管理', icon: 'mdi-ruler', to: { name: 'gauges' } },
-  { title: '模板管理', icon: 'mdi-file-table-outline', to: { name: 'templates' } },
+  // { title: '模板管理', icon: 'mdi-file-table-outline', to: { name: 'templates' } },
 ]
 
 const isSpeechSupported = computed(() => {
@@ -94,12 +99,7 @@ function toggleDrawer() {
         <RouterView />
       </v-container>
     </v-main>
-    <v-snackbar
-      v-model="snackVisible"
-      :color="snackColor"
-      :timeout="3500"
-      location="bottom right"
-    >
+    <v-snackbar v-model="snackVisible" :color="snackColor" :timeout="3500" location="bottom right">
       {{ snackMessage }}
       <template #actions>
         <v-btn variant="text" @click="snackVisible = false">關閉</v-btn>

@@ -52,18 +52,18 @@ const FORMAT_OPTIONS: Array<{
     subtitle: '可於 Microsoft Excel / Google 試算表開啟',
     icon: 'mdi-microsoft-excel',
   },
-  {
-    value: 'pdf',
-    title: 'PDF',
-    subtitle: '固定版面的 PDF 文件（含中文字型）',
-    icon: 'mdi-file-pdf-box',
-  },
-  {
-    value: 'print',
-    title: '網頁列印',
-    subtitle: '開啟瀏覽器列印對話框，可另存為 PDF',
-    icon: 'mdi-printer',
-  },
+  // {
+  //   value: 'pdf',
+  //   title: 'PDF',
+  //   subtitle: '固定版面的 PDF 文件（含中文字型）',
+  //   icon: 'mdi-file-pdf-box',
+  // },
+  // {
+  //   value: 'print',
+  //   title: '網頁列印',
+  //   subtitle: '開啟瀏覽器列印對話框，可另存為 PDF',
+  //   icon: 'mdi-printer',
+  // },
 ]
 
 function close() {
