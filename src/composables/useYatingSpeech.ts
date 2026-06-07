@@ -1,4 +1,5 @@
 import { onUnmounted, ref } from 'vue'
+import { normalizeTranscript } from '../utils/transcriptNormalizer'
 
 export function useYatingSpeech(onResult: (text: string) => void) {
   const isSupported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia
@@ -50,7 +51,7 @@ export function useYatingSpeech(onResult: (text: string) => void) {
           asr_sentence?: string
         }
         if (data.asr_final && data.asr_sentence) {
-          onResult(data.asr_sentence.trim())
+          onResult(normalizeTranscript(data.asr_sentence.trim()))
         }
       }
 

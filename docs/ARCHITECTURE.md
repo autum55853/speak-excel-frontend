@@ -46,6 +46,8 @@ speak-excel/
 │   ├── composables/
 │   │   ├── useSpeechRecognition.ts  # ✅ 語音輸入 composable
 │   │   └── useExport.ts             # ✅ 匯出功能 composable
+│   ├── utils/
+│   │   └── transcriptNormalizer.ts  # 語音辨識結果後處理（fi/phi → Φ）
 │   ├── views/                   # 頁面元件（對應路由）
 │   │   ├── ChecklistListView.vue    # ✅ 首頁：檢查表列表
 │   │   ├── ChecklistEditView.vue    # ✅ 新增 / 編輯檢查表
@@ -154,6 +156,17 @@ type ExportFormat = 'excel' | 'pdf' | 'print'
 - 語言設定：`zh-TW`
 - 辨識結果**追加**至現有文字後方（非覆蓋）
 - 僅支援 Chrome / Edge，其他瀏覽器顯示提示訊息但不拋出錯誤
+
+### 辨識結果後處理（`src/utils/transcriptNormalizer.ts`）
+
+- 提供 `normalizeTranscript(text)` 函式，在 ASR 回傳原始文字後立即套用
+- 將 `fi` / `Fi` / `phi` / `Phi`（不分大小寫，需在詞邊界）自動替換為 CNC 直徑符號 `Φ`
+- 緊接數字時一併合併空格：「fi 10」→「Φ10」、「phi 25.4」→「Φ25.4」
+- 詞中保護：`wifi` 等含 `fi` 的單字不受影響（word boundary 邊界偵測）
+- 同時套用於兩條 ASR 路徑：
+  - **Web Speech API**：`useSpeechRecognition.ts` 在 `onresult` 回呼中套用
+  - **Yating ASR**：`useYatingSpeech.ts` 在辨識結果回傳後套用
+- 測試覆蓋：`tests/transcriptNormalizer.test.ts`（8 個 test cases，含大小寫、數字接續、字中保護等情境）
 
 ---
 

@@ -76,6 +76,7 @@
 - 支援瀏覽器的麥克風按鈕同樣包在 `v-tooltip`，顯示「語音輸入」提示
 - 頁面頂部固定顯示一條 `v-alert` 提示 banner（非 Chrome/Edge 才顯示；由 `App.vue` 統一輸出）
 - 底層 composable：`useSpeechRecognition`（`zh-TW` 預設，`onUnmounted` 自動停止）
+- 辨識結果支援 CNC 直徑符號自動轉換：語音唸出「fi」或「phi」（不分大小寫）自動替換為 `Φ`；「fi 10」→「Φ10」
 
 ---
 

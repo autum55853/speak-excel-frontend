@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-06-07 — 語音輸入 Φ 符號自動轉換
+
+- 新增 `src/utils/transcriptNormalizer.ts`：語音辨識後處理工具，將 `fi` / `phi`（不分大小寫）自動替換為 CNC 直徑符號 `Φ`；緊接數字時一併合併（如「fi 10」→「Φ10」）
+- `useSpeechRecognition.ts`、`useYatingSpeech.ts` 套用 `normalizeTranscript`，兩條 ASR 路徑行為一致
+- `vite.config.ts` 新增 `resolve.alias`（`@` → `src/`），供 Vitest 解析路徑別名
+- 新增 `tests/transcriptNormalizer.test.ts`，8 個測試案例覆蓋大小寫、數字接續、字中保護等情境
+
+---
+
 ## 2026-04-24 — Excel 模板匯出功能（前後端完整實作）
 
 ### 後端（speak-excel-api）

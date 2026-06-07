@@ -1,4 +1,5 @@
 import { onUnmounted, ref } from 'vue'
+import { normalizeTranscript } from '../utils/transcriptNormalizer'
 import { useYatingSpeech } from './useYatingSpeech'
 
 type SpeechRecognitionCtor = new () => SpeechRecognition
@@ -33,7 +34,9 @@ export function useSpeechRecognition(onResult: (text: string) => void) {
     recognition.interimResults = false
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      const transcript = event.results[event.results.length - 1][0].transcript.trim()
+      const transcript = normalizeTranscript(
+        event.results[event.results.length - 1][0].transcript.trim(),
+      )
       if (transcript) onResult(transcript)
     }
 
